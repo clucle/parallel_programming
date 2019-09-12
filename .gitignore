@@ -1,4 +1,5 @@
-*
 *.out
 *.exe
 project1/dataset/*.data
+project1/dataset/test_*
+project1/run
