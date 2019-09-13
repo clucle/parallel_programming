@@ -2,4 +2,5 @@
 *.exe
 project1/dataset/*.data
 project1/dataset/test_*
+project1/test
 project1/run

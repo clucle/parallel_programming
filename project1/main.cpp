@@ -7,7 +7,7 @@
 #include <thread>
 #include <mutex>
 
-#define NUM_THREADS 5
+#define NUM_THREADS 4
 
 using namespace std;
 
@@ -52,7 +52,8 @@ void file_read_and_append(string file_name, int start, int cnt) {
 
 int main() {
 
-	int cnt = 5;
+	int cnt = 200000;
+
 	string file_name = "./dataset/test_" + to_string(cnt) +".data";
 
 	bool POLICY_FILE_LOAD_THREAD = true;
@@ -86,14 +87,21 @@ int main() {
 	cout << v.size() << '\n';
 	sort(v.begin(), v.end());
 
-
-	for (auto iter = v.begin(); iter != v.end(); ++iter) {
-		for (int j = 0; j < 10; j++) {
-			cout << (int)(*iter).key[j] << ' ';
+	bool POLICY_FILE_WRITE_THREAD = false;
+	string file_write_name = "./dataset/test_" + to_string(cnt) + "_result.data";
+	if (!POLICY_FILE_WRITE_THREAD) {
+		struct KeyValue kv;
+		ofstream ofs(file_write_name, ios::binary | ios::out);
+		ifstream ifs(file_name, ios::binary | ios::in);
+		for (auto iter = v.begin(); iter != v.end(); ++iter) {
+			ifs.seekg((*iter).idx * 100);
+			ifs.read(&kv.key[0], sizeof(struct KeyValue));
+			ofs.write((char*)&kv, sizeof(kv));
 		}
-		cout << '\n';
-		cout << (*iter).idx << '\n';
-	}
+		ifs.close();
+		ofs.close();
+	} else {
 
+	}
 }
 
