@@ -12,24 +12,40 @@ struct KeyValue {
 
 int main() {
 	int cnt = 200000;
-	string file_name = "./dataset/test_" + to_string(cnt) +"_result.data";
+	string file_s = "./dataset/single.data";
+	string file_m = "./dataset/multi.data";
 
-	ifstream ifs(file_name, ios::binary | ios::in);
-	if (ifs.is_open()) {
-		struct KeyValue kv;
-		while (ifs.good() && ifs.peek() != EOF) {
-			ifs.read(&kv.key[0], sizeof(struct KeyValue));
+	ifstream ifs_s(file_s, ios::binary | ios::in);
+	ifstream ifs_m(file_m, ios::binary | ios::in);
+
+	struct KeyValue kv_s;
+	struct KeyValue kv_m;
+	int idx = 0;
+	while (ifs_s.good() && ifs_s.peek() != EOF) {
+		ifs_s.read(&kv_s.key[0], sizeof(struct KeyValue));
+		ifs_m.read(&kv_m.key[0], sizeof(struct KeyValue));
+		bool isWrong_key = false;
+		bool isWrong_payload = false;
+		for (int i = 0; i < 10; i++) {
+			if ((char)kv_s.key[i] != (char)kv_m.key[i]) isWrong_key = true;
+		}
+		if (idx < 10 && (isWrong_key || isWrong_payload)) {
+			cout << idx << " line wrong\n";
 			for (int i = 0; i < 10; i++) {
-				cout << (int)kv.key[i] << ' ';
+				cout << (int)kv_s.key[i] << ' ';
 			}
 			cout << '\n';
+
 			for (int i = 0; i < 10; i++) {
-				cout << (int)kv.payload[i] << ' ';
+				cout << (int)kv_m.key[i] << ' ';
 			}
 			cout << '\n';
 		}
+		idx++;
+		if (idx % 50000 == 0) idx = 0;
 	}
-	ifs.close();
+	ifs_s.close();
+	ifs_m.close();
 	return 0;
 }
 

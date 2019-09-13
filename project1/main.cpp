@@ -6,6 +6,8 @@
 #include <string>
 #include <thread>
 #include <mutex>
+#include <cstdio>
+#include <chrono>
 
 #define NUM_THREADS 4
 
@@ -50,13 +52,39 @@ void file_read_and_append(string file_name, int start, int cnt) {
 	v.insert(v.end(), tmp.begin(), tmp.end());
 }
 
+void file_write_at(string file_write_name, string file_read_name, int start, int cnt) {
+	struct KeyValue kv;
+
+	g_key_mutex.lock();
+	ofstream ofs(file_write_name, ios::binary | ios::out);	
+	// ofs.seekp(0);
+	g_key_mutex.unlock();
+	ifstream ifs(file_read_name, ios::binary | ios::in);
+	vector<Key>::iterator from = v.begin() + start;
+	vector<Key>::iterator to = v.begin() + start + cnt;
+	for (auto iter = from; iter != to; ++iter) {
+		ifs.seekg((*iter).idx * 100);
+		ifs.read(&kv.key[0], sizeof(struct KeyValue));
+		ofs.write((char*)&kv, sizeof(struct KeyValue));
+	}
+	ifs.close();
+	ofs.close();
+}
+
+string gen_tmp_file_name(string s, int i) {
+	return s + to_string(i) + ".data";
+}
+
 int main() {
 
+	auto start = chrono::high_resolution_clock::now();
 	int cnt = 200000;
 
 	string file_name = "./dataset/test_" + to_string(cnt) +".data";
+	string file_write_name = "./dataset/test_" + to_string(cnt) + "_result.data";
+	remove(file_write_name.c_str());
 
-	bool POLICY_FILE_LOAD_THREAD = true;
+	bool POLICY_FILE_LOAD_THREAD = false;
 	if (!POLICY_FILE_LOAD_THREAD) {
 		int idx = 0;
 		struct KeyValue kv;
@@ -65,7 +93,7 @@ int main() {
 		if (ifs.is_open()) {
 			while (ifs.good() && ifs.peek() != EOF) {
 				ifs.read(&kv.key[0], sizeof(struct KeyValue));
-				memcpy(&k.key[0], &kv.key[0], sizeof(struct Key));
+				memcpy(&k.key[0], &kv.key[0], sizeof(struct KeyValue));
 				k.idx = idx++;
 				v.push_back(k);
 			}
@@ -87,8 +115,8 @@ int main() {
 	cout << v.size() << '\n';
 	sort(v.begin(), v.end());
 
-	bool POLICY_FILE_WRITE_THREAD = false;
-	string file_write_name = "./dataset/test_" + to_string(cnt) + "_result.data";
+	bool POLICY_FILE_WRITE_THREAD = true;
+	
 	if (!POLICY_FILE_WRITE_THREAD) {
 		struct KeyValue kv;
 		ofstream ofs(file_write_name, ios::binary | ios::out);
@@ -101,7 +129,27 @@ int main() {
 		ifs.close();
 		ofs.close();
 	} else {
-
+		int thread_cnt = NUM_THREADS;
+		thread t[NUM_THREADS];
+		int block_size = cnt / NUM_THREADS;
+		
+		for (int i = 0; i < NUM_THREADS; i++) {
+			// t[i] = thread(file_write_at, file_write_name, file_name, i * block_size, block_size);
+			t[i] = thread(file_write_at, gen_tmp_file_name("tmp", i), file_name, i * block_size, block_size);
+		}
+		ofstream ofs(file_write_name, ios::binary | ios::out);
+		for (int i = 0; i < NUM_THREADS; i++) {
+			t[i].join();
+			ifstream ifs(gen_tmp_file_name("tmp", i), ios::binary | ios::in);
+			ofs << ifs.rdbuf();
+			ifs.close();
+			remove(gen_tmp_file_name("tmp", i).c_str());
+		}
+		ofs.close();
 	}
+
+	auto end = chrono::high_resolution_clock::now();
+	auto diff = chrono::duration_cast<chrono::milliseconds>(end - start).count();
+	cout << diff << "s\n";
 }
 
