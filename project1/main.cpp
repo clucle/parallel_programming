@@ -82,11 +82,14 @@ int main(int argc, char* argv[]) {
 		return 0;
 	}
 
-	int cnt = 200000;
-
 	string file_read_name = argv[1];
 	string file_write_name = argv[2];
 	remove(file_write_name.c_str());
+
+	ifstream ifs(file_read_name, ios::binary | ios::ate);
+	ifs.seekg(0, ios::end);
+	int cnt = ifs.tellg() / sizeof(struct KeyValue);
+	ifs.close();
 
 	bool POLICY_FILE_LOAD_THREAD = true;
 	if (!POLICY_FILE_LOAD_THREAD) {
