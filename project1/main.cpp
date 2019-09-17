@@ -26,7 +26,7 @@ struct Key {
 
 const int SIZE_KEY = 10;
 bool operator< (const Key& me, const Key &other) {
-	return memcmp(me.key, other.key, SIZE_KEY) < 0;
+	return memcmp(me.key, other.key, SIZE_KEY) <= 0;
 }
 
 vector<Key> v;
