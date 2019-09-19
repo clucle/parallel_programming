@@ -9,7 +9,7 @@
 #include <cstdio>
 #include <chrono>
 
-#define NUM_THREADS 4
+#define NUM_THREADS 40
 
 using namespace std;
 
