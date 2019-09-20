@@ -88,8 +88,9 @@ int main(int argc, char* argv[]) {
 
 	ifstream ifs(file_read_name, ios::binary | ios::ate);
 	ifs.seekg(0, ios::end);
-	int cnt = ifs.tellg() / sizeof(struct KeyValue);
+	int cnt = (long long)ifs.tellg() / (long long)sizeof(struct KeyValue);
 	ifs.close();
+	cout << cnt << '\n';
 
 	bool POLICY_FILE_LOAD_THREAD = true;
 	if (!POLICY_FILE_LOAD_THREAD) {
