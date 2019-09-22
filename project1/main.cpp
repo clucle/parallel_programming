@@ -48,15 +48,16 @@ string gen_tmp_name(int idx) {
 	return "tmp" + to_string(idx) + ".data";
 }
 
-void gen_divided_sort_file(string file_read_name, int idx, int start, int end) {
+void gen_divided_sort_file(string file_read_name, int idx, unsigned int start, unsigned int end) {
 
 	sem_wait(&sem);
 	struct KeyValue kv;
 	vector<KeyValue> v;
 	ifstream ifs(file_read_name, ios::binary | ios::in);
 	if (ifs.is_open()) {
-		for (int i = start; i < end; i++) {
-			ifs.seekg(i * 100);
+		for (unsigned i = start; i < end; i++) {
+			unsigned int offset = i * 100;
+			ifs.seekg(offset);
 			ifs.read(&kv.key[0], sizeof(struct KeyValue));
 			v.push_back(kv);
 		}
@@ -105,7 +106,8 @@ int main(int argc, char* argv[]) {
 
 	vector<thread> vt;
 	for (int i = 0; ; i++) {
-		int end = min((i + 1) * block_size, cnt_keyvalue);
+		unsigned int start = i * block_size;
+		unsigned int end = min((i + 1) * block_size, cnt_keyvalue);
 		thread t = thread(gen_divided_sort_file, file_read_name, i, i * block_size, end);
 		vt.push_back(std::move(t));
 		if (end == cnt_keyvalue) break;
@@ -146,7 +148,8 @@ int main(int argc, char* argv[]) {
 			remove(gen_tmp_name(kvn.file_idx).c_str());
 			continue;
 		}
-		kvn.ifs->seekg(kvn.cur_g * 100);
+		unsigned offset = kvn.cur_g * 100;
+		kvn.ifs->seekg(offset);
 		kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
 		pq.push(std::move(kvn));
 	}
