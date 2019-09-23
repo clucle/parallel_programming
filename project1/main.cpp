@@ -32,6 +32,7 @@ struct KeyValueNode {
 	int file_idx = 0;
 	int cur_g = 0;
 	int end_g = 0;
+	int offset = 0;
 	ifstream* ifs;
 };
 
@@ -69,13 +70,11 @@ void gen_divided_sort_file(string file_read_name, string file_write_name, unsign
 }
 
 int main(int argc, char* argv[]) {
-	ios::sync_with_stdio(false);
 
 	if (argc < 3) {
 		cout << "usage: ./run InputFile OutputFile\n";
 		return 0;
 	}
-
 	string file_read_name = argv[1];
 	string file_write_name = argv[2];
 	remove(file_write_name.c_str());
@@ -89,45 +88,27 @@ int main(int argc, char* argv[]) {
 		gen_divided_sort_file(file_read_name, file_write_name, 0, cnt_keyvalue);
 		return 0;
 	}
-	
-	return 0;
-	int block_size = cnt_keyvalue / MAX_NUM_THREADS;
 
-	while (block_size * MAX_NUM_THREADS >= LIMIT_BY_RAM_BLOCK_SIZE) {
-		block_size /= 2;
-		block_size -= block_size % 100;
+	int n_threads = 2;
+	int block_size = cnt_keyvalue / n_threads;
+	while (block_size >= LIMIT_BY_RAM_BLOCK_SIZE) {
+		n_threads *= 2;
+		block_size = cnt_keyvalue / n_threads;
 	}
 
-	// generate divdided file
-	sem_init(&sem, 0, MAX_NUM_THREADS);
-
-	vector<thread> vt;
-	for (int i = 0; ; i++) {
-
-		sem_wait(&sem);
+	for (int i = 0; i < n_threads; i++) {
 		unsigned int start = i * block_size;
 		unsigned int end = min((i + 1) * block_size, cnt_keyvalue);
 		string file_write_name = gen_tmp_name(i);
 		remove(file_write_name.c_str());
-		thread t = thread(gen_divided_sort_file, file_read_name, file_write_name, i * block_size, end);
-		vt.push_back(std::move(t));
-		
-		sem_post(&sem);
-		if (end == cnt_keyvalue) break;
-
+		gen_divided_sort_file(file_read_name, file_write_name, i * block_size, end);
 	}
 
-
-	int cnt_file = vt.size();
-
-	for (unsigned int i = 0; i < vt.size(); ++i) {
-		vt.at(i).join();
-	}
-
-	sem_destroy(&sem);
-
+	int cnt_file = n_threads;
 	// merge sort by divided file
 	priority_queue<KeyValueNode> pq;
+
+	int each_space = LIMIT_BY_RAM_BLOCK_SIZE / (cnt_file + 1);
 
 	ofstream ofs(file_write_name, ios::binary | ios::out);
 	for (int i = 0; i < cnt_file; i++) {
@@ -137,24 +118,48 @@ int main(int argc, char* argv[]) {
 		kvn.ifs->seekg(0, ios::end);
 		kvn.cur_g = 0;
 		kvn.end_g = (long long)kvn.ifs->tellg() / (long long)sizeof(struct KeyValue);
+		// cur_g + each_space <= end_g -> just each_space
+		// cur_g + each_space > end_g -> read(end_g - cur_g)
+
+		// read each_space..
 		kvn.ifs->seekg(0);
-		kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
+		int read_size =  min(each_space, kvn.end_g - kvn.cur_g) * sizeof(struct KeyValue);
+		kvn.offset = kvn.cur_g + min(each_space, kvn.end_g - kvn.cur_g);
+		kvn.ifs->read(&kv[i * each_space].key[0], sizeof(struct KeyValue) * read_size);
+		printf("Init : %d %d %d %d\n", i * each_space, read_size, kvn.cur_g, kvn.offset);
+		memcpy(&kvn.key[0], &kv[i * each_space].key[0], sizeof(struct KeyValue));
 		pq.push(std::move(kvn));
 	}
 
+	int output_g = 0;
+	int output_idx = each_space * cnt_file;
+
+	int nouse = 0;
 	while (!pq.empty()) {
 		auto kvn = pq.top();
 		pq.pop();
-		ofs.write((char*)&kvn, sizeof(struct KeyValue));
+		memcpy(&kv[output_idx + output_g], &kvn, sizeof(struct KeyValue));
+		output_g++;
+		if (output_g == each_space) {
+			ofs.write((char*)&kv[output_idx].key[0], sizeof(struct KeyValue) * output_g);
+			output_g = 0;
+		}
 		kvn.cur_g++;
 		if (kvn.cur_g == kvn.end_g) {
 			delete kvn.ifs;
 			remove(gen_tmp_name(kvn.file_idx).c_str());
 			continue;
 		}
-		unsigned offset = kvn.cur_g * 100;
-		kvn.ifs->seekg(offset);
-		kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
+		if (kvn.cur_g == kvn.offset) {
+			int read_size = min(each_space, kvn.end_g - kvn.cur_g);
+			kvn.offset = kvn.cur_g + min(each_space, kvn.end_g - kvn.cur_g);
+			kvn.ifs->seekg(kvn.offset * sizeof(struct KeyValue));
+			kvn.ifs->read(&kv[kvn.file_idx * each_space].key[0], sizeof(struct KeyValue) * read_size);
+
+			printf("working : %d %d %d %d\n", kvn.file_idx, kvn.cur_g, kvn.offset, kvn.end_g);
+		}
+		memcpy(&kvn.key[0], &kv[kvn.file_idx * each_space + kvn.cur_g % each_space].key[0], sizeof(struct KeyValue));
+		// kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
 		pq.push(std::move(kvn));
 	}
 
