@@ -23,7 +23,7 @@ struct KeyValue {
 
 
 bool cmp(const KeyValue& me, const KeyValue &other) {
-	return memcmp(me.key, other.key, SIZE_KEY) <= 0;
+	return memcmp(me.key, other.key, SIZE_KEY) < 0;
 }
 
 struct KeyValueNode {
@@ -48,34 +48,24 @@ string gen_tmp_name(int idx) {
 	return "tmp" + to_string(idx) + ".data";
 }
 
-void gen_divided_sort_file(string file_read_name, int idx, unsigned int start, unsigned int end) {
+struct KeyValue kv[19000000];
 
-	sem_wait(&sem);
-	struct KeyValue kv;
-	vector<KeyValue> v;
+void gen_divided_sort_file(string file_read_name, string file_write_name, unsigned int start, unsigned int end) {
+
 	ifstream ifs(file_read_name, ios::binary | ios::in);
+	int len = end - start;
 	if (ifs.is_open()) {
-		for (unsigned i = start; i < end; i++) {
-			unsigned int offset = i * 100;
-			ifs.seekg(offset);
-			ifs.read(&kv.key[0], sizeof(struct KeyValue));
-			v.push_back(kv);
-		}
+		unsigned int offset = start * 100;
+		ifs.seekg(offset);
+		ifs.read(&kv[0].key[0], sizeof(struct KeyValue) * len);
 	}
 	ifs.close();
 
-	sort(v.begin(), v.end(), cmp);
+	sort(kv, kv + len, cmp);
 
-	remove(gen_tmp_name(idx).c_str());
-	ofstream ofs(gen_tmp_name(idx), ios::binary | ios::out);
-	for (auto e: v) {
-		ofs.write((char*)&e, sizeof(struct KeyValue));
-	}
+	ofstream ofs(file_write_name, ios::binary | ios::out);
+	ofs.write((char*)&kv[0].key[0], sizeof(struct KeyValue) * len);
 	ofs.close();
-
-	v.clear();
-
-	sem_post(&sem);
 }
 
 int main(int argc, char* argv[]) {
@@ -94,6 +84,13 @@ int main(int argc, char* argv[]) {
 	ifs.seekg(0, ios::end);
 	int cnt_keyvalue = (long long)ifs.tellg() / (long long)sizeof(struct KeyValue);
 	ifs.close();
+
+	if (cnt_keyvalue <= 15000000) {
+		gen_divided_sort_file(file_read_name, file_write_name, 0, cnt_keyvalue);
+		return 0;
+	}
+	
+	return 0;
 	int block_size = cnt_keyvalue / MAX_NUM_THREADS;
 
 	while (block_size * MAX_NUM_THREADS >= LIMIT_BY_RAM_BLOCK_SIZE) {
@@ -106,11 +103,18 @@ int main(int argc, char* argv[]) {
 
 	vector<thread> vt;
 	for (int i = 0; ; i++) {
+
+		sem_wait(&sem);
 		unsigned int start = i * block_size;
 		unsigned int end = min((i + 1) * block_size, cnt_keyvalue);
-		thread t = thread(gen_divided_sort_file, file_read_name, i, i * block_size, end);
+		string file_write_name = gen_tmp_name(i);
+		remove(file_write_name.c_str());
+		thread t = thread(gen_divided_sort_file, file_read_name, file_write_name, i * block_size, end);
 		vt.push_back(std::move(t));
+		
+		sem_post(&sem);
 		if (end == cnt_keyvalue) break;
+
 	}
 
 
