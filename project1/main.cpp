@@ -68,6 +68,10 @@ void gen_divided_sort_file(string file_read_name, string file_write_name, unsign
 	ofs.close();
 }
 
+void load_data_at() {
+
+}
+
 int main(int argc, char* argv[]) {
 
 	if (argc < 3) {
@@ -95,12 +99,20 @@ int main(int argc, char* argv[]) {
 		block_size = cnt_keyvalue / n_threads;
 	}
 
+	vector<thread> vt;
+
 	for (int i = 0; i < n_threads; i++) {
 		unsigned int start = i * block_size;
 		unsigned int end = min((i + 1) * block_size, cnt_keyvalue);
 		string file_write_name = gen_tmp_name(i);
 		remove(file_write_name.c_str());
 		gen_divided_sort_file(file_read_name, file_write_name, i * block_size, end);
+		thread t = thread(load_data_at /* todo */);
+		vt.push_back(move(t));
+	}
+
+	for (unsigned int i = 0; i < vt.size(); i++) {
+		vt.at(i).join();
 	}
 
 	int cnt_file = n_threads;
