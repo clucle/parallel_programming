@@ -49,7 +49,7 @@ string gen_tmp_name(int idx) {
 	return "tmp" + to_string(idx) + ".data";
 }
 
-struct KeyValue kv[19000000];
+struct KeyValue kv[19000001];
 
 void gen_divided_sort_file(string file_read_name, string file_write_name, unsigned int start, unsigned int end) {
 
@@ -118,23 +118,23 @@ int main(int argc, char* argv[]) {
 		kvn.ifs->seekg(0, ios::end);
 		kvn.cur_g = 0;
 		kvn.end_g = (long long)kvn.ifs->tellg() / (long long)sizeof(struct KeyValue);
-		// cur_g + each_space <= end_g -> just each_space
-		// cur_g + each_space > end_g -> read(end_g - cur_g)
 
-		// read each_space..
-		kvn.ifs->seekg(0);
 		int read_size =  min(each_space, kvn.end_g - kvn.cur_g) * sizeof(struct KeyValue);
-		kvn.offset = kvn.cur_g + min(each_space, kvn.end_g - kvn.cur_g);
-		kvn.ifs->read(&kv[i * each_space].key[0], sizeof(struct KeyValue) * read_size);
-		printf("Init : %d %d %d %d\n", i * each_space, read_size, kvn.cur_g, kvn.offset);
+		kvn.offset = kvn.cur_g + min(each_space, kvn.end_g - kvn.cur_g);	
+		kvn.ifs->seekg(0);
+# if 1
+		kvn.ifs->read(&kv[i * each_space].key[0], read_size);
 		memcpy(&kvn.key[0], &kv[i * each_space].key[0], sizeof(struct KeyValue));
+#else
+		kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
+#endif
+
 		pq.push(std::move(kvn));
 	}
 
 	int output_g = 0;
 	int output_idx = each_space * cnt_file;
 
-	int nouse = 0;
 	while (!pq.empty()) {
 		auto kvn = pq.top();
 		pq.pop();
@@ -150,17 +150,23 @@ int main(int argc, char* argv[]) {
 			remove(gen_tmp_name(kvn.file_idx).c_str());
 			continue;
 		}
+#if 1
 		if (kvn.cur_g == kvn.offset) {
-			int read_size = min(each_space, kvn.end_g - kvn.cur_g);
+			int read_size = min(each_space, kvn.end_g - kvn.cur_g) * sizeof(struct KeyValue);
 			kvn.offset = kvn.cur_g + min(each_space, kvn.end_g - kvn.cur_g);
-			kvn.ifs->seekg(kvn.offset * sizeof(struct KeyValue));
-			kvn.ifs->read(&kv[kvn.file_idx * each_space].key[0], sizeof(struct KeyValue) * read_size);
-
-			printf("working : %d %d %d %d\n", kvn.file_idx, kvn.cur_g, kvn.offset, kvn.end_g);
+			kvn.ifs->seekg(kvn.cur_g * sizeof(struct KeyValue));
+			kvn.ifs->read(&kv[kvn.file_idx * each_space].key[0], read_size);
 		}
 		memcpy(&kvn.key[0], &kv[kvn.file_idx * each_space + kvn.cur_g % each_space].key[0], sizeof(struct KeyValue));
-		// kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
+#else
+		unsigned offset = kvn.cur_g * 100;
+		kvn.ifs->seekg(offset);
+		kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
+#endif
 		pq.push(std::move(kvn));
+	}
+	if (output_g > 0) {
+		ofs.write((char*)&kv[output_idx].key[0], sizeof(struct KeyValue) * output_g);
 	}
 
 	ofs.close();
