@@ -49,6 +49,7 @@ string gen_tmp_name(int idx) {
 }
 
 struct KeyValue kv[19000001];
+priority_queue<KeyValueNode> pq;
 
 void gen_divided_sort_file(string file_read_name, string file_write_name, unsigned int start, unsigned int end) {
 
@@ -68,8 +69,19 @@ void gen_divided_sort_file(string file_read_name, string file_write_name, unsign
 	ofs.close();
 }
 
-void load_data_at() {
-
+void load_data_at_and_push_pq(int file_idx, int each_space) {
+	KeyValueNode kvn;
+	kvn.file_idx = file_idx;
+	kvn.ifs = new ifstream(gen_tmp_name(kvn.file_idx), ios::binary | ios::in);
+	kvn.ifs->seekg(0, ios::end);
+	kvn.cur_g = 0;
+	kvn.end_g = (long long)kvn.ifs->tellg() / (long long)sizeof(struct KeyValue);
+	int read_size =  min(each_space, kvn.end_g - kvn.cur_g) * sizeof(struct KeyValue);
+	kvn.offset = kvn.cur_g + min(each_space, kvn.end_g - kvn.cur_g);
+	kvn.ifs->seekg(0);
+	kvn.ifs->read(&kv[kvn.file_idx * each_space].key[0], read_size);
+	kvn.kv = kv + (kvn.file_idx * each_space);
+	pq.push(std::move(kvn));
 }
 
 int main(int argc, char* argv[]) {
@@ -99,15 +111,21 @@ int main(int argc, char* argv[]) {
 		block_size = cnt_keyvalue / n_threads;
 	}
 
-	vector<thread> vt;
 
-	for (int i = 0; i < n_threads; i++) {
+	vector<thread> vt;
+	int cnt_file = n_threads;
+	int each_space = LIMIT_BY_RAM_BLOCK_SIZE / (cnt_file + 1);
+
+	for (int i = 0; i < cnt_file; i++) {
 		unsigned int start = i * block_size;
 		unsigned int end = min((i + 1) * block_size, cnt_keyvalue);
 		string file_write_name = gen_tmp_name(i);
 		remove(file_write_name.c_str());
-		gen_divided_sort_file(file_read_name, file_write_name, i * block_size, end);
-		thread t = thread(load_data_at /* todo */);
+		gen_divided_sort_file(file_read_name, file_write_name, start, end);
+	}
+
+	for (int i = 0; i < cnt_file; i++) {
+		thread t = thread(load_data_at_and_push_pq, i, each_space);
 		vt.push_back(move(t));
 	}
 
@@ -115,34 +133,9 @@ int main(int argc, char* argv[]) {
 		vt.at(i).join();
 	}
 
-	int cnt_file = n_threads;
 	// merge sort by divided file
-	priority_queue<KeyValueNode> pq;
-
-	int each_space = LIMIT_BY_RAM_BLOCK_SIZE / (cnt_file + 1);
 
 	ofstream ofs(file_write_name, ios::binary | ios::out);
-	for (int i = 0; i < cnt_file; i++) {
-		KeyValueNode kvn;
-		kvn.file_idx = i;
-		kvn.ifs = new ifstream(gen_tmp_name(i), ios::binary | ios::in);
-		kvn.ifs->seekg(0, ios::end);
-		kvn.cur_g = 0;
-		kvn.end_g = (long long)kvn.ifs->tellg() / (long long)sizeof(struct KeyValue);
-
-		int read_size =  min(each_space, kvn.end_g - kvn.cur_g) * sizeof(struct KeyValue);
-		kvn.offset = kvn.cur_g + min(each_space, kvn.end_g - kvn.cur_g);	
-		kvn.ifs->seekg(0);
-# if 1
-		kvn.ifs->read(&kv[i * each_space].key[0], read_size);
-		kvn.kv = kv + (i * each_space);
-#else
-		kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
-#endif
-
-		pq.push(std::move(kvn));
-	}
-
 	int output_g = 0;
 	int output_idx = each_space * cnt_file;
 
