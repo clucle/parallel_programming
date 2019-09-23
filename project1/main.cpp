@@ -27,8 +27,7 @@ bool cmp(const KeyValue& me, const KeyValue &other) {
 }
 
 struct KeyValueNode {
-	char key[10];
-	char payload[90];
+	struct KeyValue *kv;
 	int file_idx = 0;
 	int cur_g = 0;
 	int end_g = 0;
@@ -37,7 +36,7 @@ struct KeyValueNode {
 };
 
 bool operator<(const KeyValueNode &me, const KeyValueNode &other) {
-	return memcmp(me.key, other.key, SIZE_KEY) > 0;
+	return memcmp(me.kv->key, other.kv->key, SIZE_KEY) > 0;
 }
 
 const int LIMIT_BY_RAM_BLOCK_SIZE = 19000000;
@@ -124,7 +123,7 @@ int main(int argc, char* argv[]) {
 		kvn.ifs->seekg(0);
 # if 1
 		kvn.ifs->read(&kv[i * each_space].key[0], read_size);
-		memcpy(&kvn.key[0], &kv[i * each_space].key[0], sizeof(struct KeyValue));
+		kvn.kv = kv + (i * each_space);
 #else
 		kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
 #endif
@@ -138,7 +137,7 @@ int main(int argc, char* argv[]) {
 	while (!pq.empty()) {
 		auto kvn = pq.top();
 		pq.pop();
-		memcpy(&kv[output_idx + output_g], &kvn, sizeof(struct KeyValue));
+		memcpy(&kv[output_idx + output_g], &(*(kvn.kv)), sizeof(struct KeyValue));
 		output_g++;
 		if (output_g == each_space) {
 			ofs.write((char*)&kv[output_idx].key[0], sizeof(struct KeyValue) * output_g);
@@ -157,7 +156,7 @@ int main(int argc, char* argv[]) {
 			kvn.ifs->seekg(kvn.cur_g * sizeof(struct KeyValue));
 			kvn.ifs->read(&kv[kvn.file_idx * each_space].key[0], read_size);
 		}
-		memcpy(&kvn.key[0], &kv[kvn.file_idx * each_space + kvn.cur_g % each_space].key[0], sizeof(struct KeyValue));
+		kvn.kv = kv + (kvn.file_idx * each_space + kvn.cur_g % each_space);
 #else
 		unsigned offset = kvn.cur_g * 100;
 		kvn.ifs->seekg(offset);
