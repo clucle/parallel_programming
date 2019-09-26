@@ -51,19 +51,34 @@ string gen_tmp_name(int idx) {
 struct KeyValue kv[19000001];
 priority_queue<KeyValueNode> pq;
 
-void gen_divided_sort_file(string file_read_name, string file_write_name, unsigned int start, unsigned int end) {
-
+void load_file(string file_read_name, unsigned int idx, unsigned int idx_file, unsigned int cnt) {
 	ifstream ifs(file_read_name, ios::binary | ios::in);
-	int len = end - start;
-	if (ifs.is_open()) {
-		unsigned int offset = start * 100;
-		ifs.seekg(offset);
-		ifs.read(&kv[0].key[0], sizeof(struct KeyValue) * len);
-	}
+	unsigned int offset = idx_file * sizeof(KeyValue);
+	ifs.seekg(offset);
+	ifs.read(&kv[idx].key[0], sizeof(struct KeyValue) * cnt);
 	ifs.close();
+}
 
+void load_file_multi_thread(string file_read_name, unsigned int idx, unsigned int idx_file, unsigned int cnt) {
+	thread t[MAX_NUM_THREADS];
+	int cnt_per_thread = cnt / MAX_NUM_THREADS;
+	for (int i = 0; i < MAX_NUM_THREADS - 1; i++) {
+		int pos = i * cnt_per_thread;
+		t[i] = thread(load_file, file_read_name, idx + pos, idx_file + pos, cnt_per_thread);
+	}
+	int pos = (MAX_NUM_THREADS - 1) * cnt_per_thread;
+	int last_cnt = cnt - cnt_per_thread * (MAX_NUM_THREADS - 1);
+	t[MAX_NUM_THREADS - 1] = thread(load_file, file_read_name, idx + pos, idx_file + pos, last_cnt);
+
+	for (int i = 0; i < MAX_NUM_THREADS; i++) {
+		t[i].join();
+	}
+}
+
+void gen_divided_sort_file(string file_read_name, string file_write_name, unsigned int start, unsigned int end) {
+	int cnt = end - start;
+	load_file_multi_thread(file_read_name, 0, 0, cnt);
 	sort(kv, kv + len, cmp);
-
 	ofstream ofs(file_write_name, ios::binary | ios::out);
 	ofs.write((char*)&kv[0].key[0], sizeof(struct KeyValue) * len);
 	ofs.close();
