@@ -32,7 +32,6 @@ struct KeyValueNode {
 	int cur_g = 0;
 	int end_g = 0;
 	int offset = 0;
-	ifstream* ifs;
 };
 
 bool operator<(const KeyValueNode &me, const KeyValueNode &other) {
@@ -77,24 +76,24 @@ void load_file_multi_thread(string file_read_name, unsigned int idx, unsigned in
 
 void gen_divided_sort_file(string file_read_name, string file_write_name, unsigned int start, unsigned int end) {
 	int cnt = end - start;
-	load_file_multi_thread(file_read_name, 0, 0, cnt);
-	sort(kv, kv + len, cmp);
+	load_file_multi_thread(file_read_name, 0, start, cnt);
+	sort(kv, kv + cnt, cmp);
 	ofstream ofs(file_write_name, ios::binary | ios::out);
-	ofs.write((char*)&kv[0].key[0], sizeof(struct KeyValue) * len);
+	ofs.write((char*)&kv[0].key[0], sizeof(struct KeyValue) * cnt);
 	ofs.close();
 }
 
 void load_data_at_and_push_pq(int file_idx, int each_space) {
 	KeyValueNode kvn;
 	kvn.file_idx = file_idx;
-	kvn.ifs = new ifstream(gen_tmp_name(kvn.file_idx), ios::binary | ios::in);
-	kvn.ifs->seekg(0, ios::end);
+	ifstream ifs(gen_tmp_name(kvn.file_idx), ios::binary | ios::in);
+	ifs.seekg(0, ios::end);
 	kvn.cur_g = 0;
-	kvn.end_g = (long long)kvn.ifs->tellg() / (long long)sizeof(struct KeyValue);
-	int read_size =  min(each_space, kvn.end_g - kvn.cur_g) * sizeof(struct KeyValue);
+	kvn.end_g = (long long)ifs.tellg() / (long long)sizeof(struct KeyValue);
+	ifs.close();
+	int cnt =  min(each_space, kvn.end_g - kvn.cur_g);
 	kvn.offset = kvn.cur_g + min(each_space, kvn.end_g - kvn.cur_g);
-	kvn.ifs->seekg(0);
-	kvn.ifs->read(&kv[kvn.file_idx * each_space].key[0], read_size);
+	load_file_multi_thread(gen_tmp_name(kvn.file_idx), kvn.file_idx * each_space, 0, cnt);
 	kvn.kv = kv + (kvn.file_idx * each_space);
 	pq.push(std::move(kvn));
 }
@@ -140,12 +139,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	for (int i = 0; i < cnt_file; i++) {
-		thread t = thread(load_data_at_and_push_pq, i, each_space);
-		vt.push_back(move(t));
-	}
-
-	for (unsigned int i = 0; i < vt.size(); i++) {
-		vt.at(i).join();
+		load_data_at_and_push_pq(i, each_space);
 	}
 
 	// merge sort by divided file
@@ -165,23 +159,16 @@ int main(int argc, char* argv[]) {
 		}
 		kvn.cur_g++;
 		if (kvn.cur_g == kvn.end_g) {
-			delete kvn.ifs;
+			// delete kvn.ifs;
 			remove(gen_tmp_name(kvn.file_idx).c_str());
 			continue;
 		}
-#if 1
 		if (kvn.cur_g == kvn.offset) {
-			int read_size = min(each_space, kvn.end_g - kvn.cur_g) * sizeof(struct KeyValue);
+			int cnt = min(each_space, kvn.end_g - kvn.cur_g);
 			kvn.offset = kvn.cur_g + min(each_space, kvn.end_g - kvn.cur_g);
-			kvn.ifs->seekg(kvn.cur_g * sizeof(struct KeyValue));
-			kvn.ifs->read(&kv[kvn.file_idx * each_space].key[0], read_size);
+			load_file_multi_thread(gen_tmp_name(kvn.file_idx), kvn.file_idx * each_space, kvn.cur_g, cnt);
 		}
 		kvn.kv = kv + (kvn.file_idx * each_space + kvn.cur_g % each_space);
-#else
-		unsigned offset = kvn.cur_g * 100;
-		kvn.ifs->seekg(offset);
-		kvn.ifs->read(&kvn.key[0], sizeof(struct KeyValue));
-#endif
 		pq.push(std::move(kvn));
 	}
 	if (output_g > 0) {
