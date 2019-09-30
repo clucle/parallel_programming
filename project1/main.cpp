@@ -13,7 +13,8 @@ using namespace std;
 
 const unsigned int SIZE_KEY			= 10;
 const unsigned int MAX_NUM_THREADS	= 2;
-const unsigned int MAX_KV_SIZE		= 20000000;
+const unsigned int MAX_KV_IN_SIZE	= 16000000;
+const unsigned int MAX_KV_OUT_SIZE	=  2000000;
 const unsigned int MAX_RAM_SIZE		= 1800000000;
 
 struct KeyValue {
@@ -30,7 +31,8 @@ bool cmp(const KeyValue& me, const KeyValue &other) {
 
 
 
-struct KeyValue g_kv[MAX_KV_SIZE];
+struct KeyValue g_kv[MAX_KV_IN_SIZE];
+struct KeyValue g_out_kv[MAX_KV_OUT_SIZE];
 
 chrono::system_clock::time_point start;
 
@@ -56,11 +58,11 @@ int main(int argc, char* argv[]) {
 
 	printf("file size : %u\n", size_input_file);
 	if (size_input_file <= MAX_RAM_SIZE) {
-		// g_kv = (gKeyValue*)mmap(NULL, size_input_file, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);	
-		// sort(g_kv->kv, g_kv->kv + size_input_file / sizeof(KeyValue), cmp);
-		// munmap(g_kv, size_input_file);
+		g_kv = (gKeyValue*)mmap(NULL, size_input_file, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);	
+		sort(g_kv->kv, g_kv->kv + size_input_file / sizeof(KeyValue), cmp);
+		munmap(g_kv, size_input_file);
 		
-		vector<thread> v;
+		/*vector<thread> v;
 		unsigned int size_per_thread = size_input_file / MAX_NUM_THREADS;
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
 			v.push_back(thread{[i, argv, size_per_thread]() {
@@ -73,6 +75,7 @@ int main(int argc, char* argv[]) {
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
 			v[i].join();
 		}
+		*/
 		print_duration();
 		/*	
 		ifstream ifs(argv[1], ios::binary | ios::in);
