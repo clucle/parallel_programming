@@ -209,13 +209,28 @@ int main(int argc, char* argv[]) {
 
 		print_duration();
 		int cur_out = 0;
+		int cur_write_idx = 0;
+		unsigned int HALF_MAX_KV_OUT_SIZE = MAX_KV_OUT_SIZE / 2;
+		thread* t_write = new thread{[ = ](){}};
+
 		ofstream ofs(argv[2], ios::binary | ios::out);
 		while (!pq.empty()) {
 			auto kvnf = pq.top();
 			pq.pop();
 			memcpy(&g_out_kv[cur_out++], &(*(kvnf.kv)), sizeof(KeyValue));
+			if (cur_out == HALF_MAX_KV_OUT_SIZE) {
+				t_write->join();
+				t_write = new thread{[&ofs, HALF_MAX_KV_OUT_SIZE, g_out_kv]() {
+					ofs.write((char*)&g_out_kv->key[0], HALF_MAX_KV_OUT_SIZE * sizeof(KeyValue));
+				}};
+				cur_write_idx = HALF_MAX_KV_OUT_SIZE;
+			}
 			if (cur_out == MAX_KV_OUT_SIZE) {
-				ofs.write((char*)&g_out_kv->key[0], MAX_KV_OUT_SIZE * sizeof(KeyValue));
+				t_write->join();
+				t_write = new thread{[&ofs, HALF_MAX_KV_OUT_SIZE, g_out_kv]() {
+					ofs.write((char*)&g_out_kv->key[HALF_MAX_KV_OUT_SIZE * sizeof(KeyValue)], HALF_MAX_KV_OUT_SIZE * sizeof(KeyValue));
+				}};
+				cur_write_idx = 0;
 				cur_out = 0;
 			}
 			kvnf.idx++;
@@ -236,8 +251,9 @@ int main(int argc, char* argv[]) {
 			kvnf.kv = g_kv + (kvnf.idx_file * block_size_section + kvnf.idx % block_size_section);
 			pq.push(std::move(kvnf));
 		}
-		if (cur_out > 0) {
-			ofs.write((char*)&g_out_kv->key[0], cur_out * sizeof(KeyValue));
+		t_write->join();
+		if (cur_out > cur_write_idx) {
+			ofs.write((char*)&g_out_kv->key[cur_write_idx * sizeof(KeyValue)], (cur_out - cur_write_idx) * sizeof(KeyValue));
 		}
 		ofs.close();
 	}
