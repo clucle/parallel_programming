@@ -14,20 +14,27 @@ using namespace std;
 
 const unsigned int SIZE_KEY			= 10;
 const unsigned int MAX_NUM_THREADS	= 40;
-const unsigned int MAX_KV_IN_SIZE	= 10000000;
+const unsigned int MAX_KV_IN_SIZE	= 16000000;
 const unsigned int MAX_KV_OUT_SIZE	=  2000000;
 const unsigned int MAX_RAM_SIZE		= 1800000000;
 
 struct KeyValue {
 	char key[10];
 	char payload[90];
-	bool operator<(KeyValue other) const {
-		return memcmp(key, other.key, SIZE_KEY) < 0;
-	}
 };
 
 bool cmp(const KeyValue& me, const KeyValue &other) {
 	return memcmp(me.key, other.key, SIZE_KEY) < 0;
+}
+
+struct KeyValueNode {
+	struct KeyValue *kv;
+	int idx = 0;
+	int end = 0;
+};
+
+bool operator<(const KeyValueNode& me, const KeyValueNode &other) {
+	return memcmp(me.kv->key, other.kv->key, SIZE_KEY) > 0;
 }
 
 
@@ -61,12 +68,15 @@ int main(int argc, char* argv[]) {
 		
 		vector<thread> v;
 		unsigned int size_per_thread = size_input_file / MAX_NUM_THREADS;
+		unsigned int block_per_thread = size_per_thread / sizeof(KeyValue);
+
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
-			v.push_back(thread{[i, argv, size_per_thread, g_kv]() {
+			v.push_back(thread{[i, argv, size_per_thread, block_per_thread, g_kv]() {
 				ifstream ifs(argv[1], ios::binary | ios::in);
 				ifs.seekg(i * size_per_thread);
 				ifs.read(&g_kv->key[i * size_per_thread], size_per_thread);
 				ifs.close();
+				sort(g_kv + i * block_per_thread, g_kv + (i + 1) * block_per_thread, cmp);
 			}});
 		}
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
@@ -83,17 +93,52 @@ int main(int argc, char* argv[]) {
 		ifs.read(&g_kv->key[0], size_input_file);
 		ifs.close();
 		*/
+
 		print_duration();
-		sort(g_kv, g_kv + size_input_file / sizeof(KeyValue), cmp);
+		
+		
+		priority_queue<KeyValueNode> pq;
+		for (int i = 0; i < MAX_NUM_THREADS; i++) {
+			struct KeyValueNode kvn;
+			kvn.idx = i * block_per_thread;
+			kvn.end = kvn.idx + block_per_thread;
+			kvn.kv = g_kv + kvn.idx;
+			pq.push(std::move(kvn));
+		}
+		int cur_out = 0;
+	
+		ofstream ofs(argv[2], ios::binary | ios::out);
+		while (!pq.empty()) {
+			auto kvn = pq.top();
+			pq.pop();
+			memcpy(&g_out_kv[cur_out++], &(*(kvn.kv)), sizeof(KeyValue));
+			if (cur_out == MAX_KV_OUT_SIZE) {
+				ofs.write((char*)&g_out_kv->key[0], MAX_KV_OUT_SIZE * sizeof(KeyValue));
+				cur_out = 0;
+			}
+			kvn.idx++;
+			if (kvn.idx == kvn.end) {
+				continue;
+			}
+			kvn.kv = g_kv + kvn.idx;
+			pq.push(std::move(kvn));
+		}
+		if (cur_out > 0) {
+			ofs.write((char*)&g_out_kv->key[0], cur_out * sizeof(KeyValue));
+		}
+		
+		ofs.close();
+		
+
+		// ofstream ofs(argv[2], ios::binary | ios::out);
+		// ofs.write((char*)&g_kv->key[0], size_input_file);
+		// ofs.close();
 		print_duration();
 		/*
 		FILE* out_file = fopen(argv[2], "wb+");
 		fwrite((char*)&g_kv->key[0], sizeof(KeyValue), size_input_file / sizeof(KeyValue), out_file);
 		fclose(out_file);*/
 		
-		ofstream ofs(argv[2], ios::binary | ios::out);
-		ofs.write((char*)&g_kv->key[0], size_input_file);
-		ofs.close();
 	}
 	print_duration();
 	// string file_read_name = argv[1];
