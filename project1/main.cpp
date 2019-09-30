@@ -8,12 +8,13 @@
 #include <fstream>
 #include <vector>
 #include <thread>
+#include <queue>
 
 using namespace std;
 
 const unsigned int SIZE_KEY			= 10;
-const unsigned int MAX_NUM_THREADS	= 2;
-const unsigned int MAX_KV_IN_SIZE	= 16000000;
+const unsigned int MAX_NUM_THREADS	= 40;
+const unsigned int MAX_KV_IN_SIZE	= 10000000;
 const unsigned int MAX_KV_OUT_SIZE	=  2000000;
 const unsigned int MAX_RAM_SIZE		= 1800000000;
 
@@ -52,17 +53,14 @@ int main(int argc, char* argv[]) {
 
 	ifstream ifs(argv[1], ios::binary | ios::ate);
 	ifs.seekg(0, ios::end);
-	unsigned int size_input_file = (unsigned int)ifs.tellg();
+	size_t size_input_file = (size_t)ifs.tellg();
 	ifs.close();
 	int fd = open(argv[1], O_RDWR);
+	printf("size %zu\n", size_input_file);
 
 	printf("file size : %u\n", size_input_file);
 	if (size_input_file <= MAX_RAM_SIZE) {
-		g_kv = (gKeyValue*)mmap(NULL, size_input_file, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);	
-		sort(g_kv->kv, g_kv->kv + size_input_file / sizeof(KeyValue), cmp);
-		munmap(g_kv, size_input_file);
-		
-		/*vector<thread> v;
+		vector<thread> v;
 		unsigned int size_per_thread = size_input_file / MAX_NUM_THREADS;
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
 			v.push_back(thread{[i, argv, size_per_thread]() {
@@ -75,7 +73,7 @@ int main(int argc, char* argv[]) {
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
 			v[i].join();
 		}
-		*/
+		v.clear();
 		print_duration();
 		/*	
 		ifstream ifs(argv[1], ios::binary | ios::in);
