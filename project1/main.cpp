@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) {
 	struct KeyValue* g_kv = (KeyValue*)malloc(sizeof(KeyValue) * MAX_KV_IN_SIZE);
 	size_t size_input_file = (size_t)ifs.tellg();
 	ifs.close();
-	// int fd = open(argv[1], O_RDWR);
+
 	if (size_input_file <= MAX_RAM_SIZE) {
 		
 		vector<thread> v;
@@ -82,20 +82,6 @@ int main(int argc, char* argv[]) {
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
 			v[i].join();
 		}
-		print_duration();
-		/*
-		FILE* in_file = fopen(argv[1], "rb");
-		int r = fread(&g_kv->key[0], sizeof(KeyValue), size_input_file / sizeof(KeyValue), in_file);
-		fclose(in_file);
-		*/
-		/*	
-		ifstream ifs(argv[1], ios::binary | ios::in);
-		ifs.read(&g_kv->key[0], size_input_file);
-		ifs.close();
-		*/
-
-		print_duration();
-		
 		
 		priority_queue<KeyValueNode> pq;
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
@@ -128,23 +114,8 @@ int main(int argc, char* argv[]) {
 		}
 		
 		ofs.close();
-		
-
-		// ofstream ofs(argv[2], ios::binary | ios::out);
-		// ofs.write((char*)&g_kv->key[0], size_input_file);
-		// ofs.close();
-		print_duration();
-		/*
-		FILE* out_file = fopen(argv[2], "wb+");
-		fwrite((char*)&g_kv->key[0], sizeof(KeyValue), size_input_file / sizeof(KeyValue), out_file);
-		fclose(out_file);*/
-		
 	}
 	print_duration();
-	// string file_read_name = argv[1];
-	// string file_write_name = argv[2];
-	// remove(file_write_name.c_str());
-
 	return 0;
 }
 
