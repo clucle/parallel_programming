@@ -12,18 +12,23 @@
 using namespace std;
 
 const unsigned int SIZE_KEY			= 10;
-const unsigned int MAX_NUM_THREADS	= 40;
+const unsigned int MAX_NUM_THREADS	= 2;
 const unsigned int MAX_KV_SIZE		= 20000000;
 const unsigned int MAX_RAM_SIZE		= 1800000000;
 
 struct KeyValue {
 	char key[10];
 	char payload[90];
+	bool operator<(KeyValue other) const {
+		return memcmp(key, other.key, SIZE_KEY) < 0;
+	}
 };
 
 bool cmp(const KeyValue& me, const KeyValue &other) {
 	return memcmp(me.key, other.key, SIZE_KEY) < 0;
 }
+
+
 
 struct KeyValue g_kv[MAX_KV_SIZE];
 
@@ -60,6 +65,7 @@ int main(int argc, char* argv[]) {
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
 			v.push_back(thread{[i, argv, size_per_thread]() {
 				ifstream ifs(argv[1], ios::binary | ios::in);
+				ifs.seekg(i * size_per_thread);
 				ifs.read(&g_kv->key[i * size_per_thread], size_per_thread);
 				ifs.close();
 			}});
@@ -75,7 +81,6 @@ int main(int argc, char* argv[]) {
 		*/
 		print_duration();
 		sort(g_kv, g_kv + size_input_file / sizeof(KeyValue), cmp);
-		
 		print_duration();
 		ofstream ofs(argv[2], ios::binary | ios::out);
 		ofs.write((char*)&g_kv->key[0], size_input_file);
