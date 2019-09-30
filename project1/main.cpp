@@ -54,6 +54,7 @@ int main(int argc, char* argv[]) {
 		// g_kv = (gKeyValue*)mmap(NULL, size_input_file, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);	
 		// sort(g_kv->kv, g_kv->kv + size_input_file / sizeof(KeyValue), cmp);
 		// munmap(g_kv, size_input_file);
+		
 		vector<thread> v;
 		unsigned int size_per_thread = size_input_file / MAX_NUM_THREADS;
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
@@ -66,6 +67,7 @@ int main(int argc, char* argv[]) {
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
 			v[i].join();
 		}
+		print_duration();
 	
 		ifstream ifs(argv[1], ios::binary | ios::in);
 		ifs.read(&g_kv->key[0], size_input_file);
