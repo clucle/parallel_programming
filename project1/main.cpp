@@ -68,11 +68,11 @@ int main(int argc, char* argv[]) {
 			v[i].join();
 		}
 		print_duration();
-	
+		/*	
 		ifstream ifs(argv[1], ios::binary | ios::in);
 		ifs.read(&g_kv->key[0], size_input_file);
 		ifs.close();
-		
+		*/
 		print_duration();
 		sort(g_kv, g_kv + size_input_file / sizeof(KeyValue), cmp);
 		
