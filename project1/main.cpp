@@ -73,7 +73,6 @@ int main(int argc, char* argv[]) {
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
 			v[i].join();
 		}
-		v.clear();
 		print_duration();
 		/*	
 		ifstream ifs(argv[1], ios::binary | ios::in);
@@ -83,9 +82,15 @@ int main(int argc, char* argv[]) {
 		print_duration();
 		sort(g_kv, g_kv + size_input_file / sizeof(KeyValue), cmp);
 		print_duration();
+
+		FILE* out_file = fopen(argv[2], "wb+");
+		fwrite((char*)&g_kv->key[0], sizeof(KeyValue), size_input_file / sizeof(KeyValue), out_file);
+		fclose(out_file);
+		/*
 		ofstream ofs(argv[2], ios::binary | ios::out);
 		ofs.write((char*)&g_kv->key[0], size_input_file);
 		ofs.close();
+		*/
 	}
 	print_duration();
 	// string file_read_name = argv[1];
