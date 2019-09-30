@@ -32,7 +32,7 @@ bool cmp(const KeyValue& me, const KeyValue &other) {
 
 
 
-struct KeyValue g_kv[MAX_KV_IN_SIZE];
+// struct KeyValue g_kv[MAX_KV_IN_SIZE];
 struct KeyValue g_out_kv[MAX_KV_OUT_SIZE];
 
 chrono::system_clock::time_point start;
@@ -53,6 +53,7 @@ int main(int argc, char* argv[]) {
 
 	ifstream ifs(argv[1], ios::binary | ios::ate);
 	ifs.seekg(0, ios::end);
+	struct KeyValue* g_kv = (KeyValue*)malloc(sizeof(KeyValue) * MAX_KV_IN_SIZE);
 	size_t size_input_file = (size_t)ifs.tellg();
 	ifs.close();
 	// int fd = open(argv[1], O_RDWR);
@@ -61,7 +62,7 @@ int main(int argc, char* argv[]) {
 		vector<thread> v;
 		unsigned int size_per_thread = size_input_file / MAX_NUM_THREADS;
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
-			v.push_back(thread{[i, argv, size_per_thread]() {
+			v.push_back(thread{[i, argv, size_per_thread, g_kv]() {
 				ifstream ifs(argv[1], ios::binary | ios::in);
 				ifs.seekg(i * size_per_thread);
 				ifs.read(&g_kv->key[i * size_per_thread], size_per_thread);
