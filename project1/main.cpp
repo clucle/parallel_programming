@@ -43,11 +43,13 @@ int main(int argc, char* argv[]) {
 
 	start = chrono::system_clock::now();
 
+	ifstream ifs(argv[1], ios::binary | ios::ate);
+	ifs.seekg(0, ios::end);
+	unsigned int size_input_file = (unsigned int)ifs.tellg();
+	ifs.close();
 	int fd = open(argv[1], O_RDWR);
-	unsigned int size_input_file = lseek(fd, 0L, SEEK_END);
-	lseek(fd, 0L, SEEK_SET);
 
-	// printf("file size : %u\n", size_input_file);
+	printf("file size : %u\n", size_input_file);
 	if (size_input_file <= MAX_RAM_SIZE) {
 		// g_kv = (gKeyValue*)mmap(NULL, size_input_file, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);	
 		// sort(g_kv->kv, g_kv->kv + size_input_file / sizeof(KeyValue), cmp);
