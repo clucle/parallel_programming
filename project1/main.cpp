@@ -55,11 +55,9 @@ int main(int argc, char* argv[]) {
 	ifs.seekg(0, ios::end);
 	size_t size_input_file = (size_t)ifs.tellg();
 	ifs.close();
-	int fd = open(argv[1], O_RDWR);
-	printf("size %zu\n", size_input_file);
-
-	printf("file size : %u\n", size_input_file);
+	// int fd = open(argv[1], O_RDWR);
 	if (size_input_file <= MAX_RAM_SIZE) {
+		
 		vector<thread> v;
 		unsigned int size_per_thread = size_input_file / MAX_NUM_THREADS;
 		for (int i = 0; i < MAX_NUM_THREADS; i++) {
@@ -74,6 +72,11 @@ int main(int argc, char* argv[]) {
 			v[i].join();
 		}
 		print_duration();
+		/*
+		FILE* in_file = fopen(argv[1], "rb");
+		int r = fread(&g_kv->key[0], sizeof(KeyValue), size_input_file / sizeof(KeyValue), in_file);
+		fclose(in_file);
+		*/
 		/*	
 		ifstream ifs(argv[1], ios::binary | ios::in);
 		ifs.read(&g_kv->key[0], size_input_file);
@@ -82,15 +85,14 @@ int main(int argc, char* argv[]) {
 		print_duration();
 		sort(g_kv, g_kv + size_input_file / sizeof(KeyValue), cmp);
 		print_duration();
-
+		/*
 		FILE* out_file = fopen(argv[2], "wb+");
 		fwrite((char*)&g_kv->key[0], sizeof(KeyValue), size_input_file / sizeof(KeyValue), out_file);
-		fclose(out_file);
-		/*
+		fclose(out_file);*/
+		
 		ofstream ofs(argv[2], ios::binary | ios::out);
 		ofs.write((char*)&g_kv->key[0], size_input_file);
 		ofs.close();
-		*/
 	}
 	print_duration();
 	// string file_read_name = argv[1];
