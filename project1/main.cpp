@@ -38,6 +38,7 @@ struct KeyValueNodeFile {
 	struct KeyValue *kv;
 	unsigned int idx = 0;
 	unsigned int offset = 0;
+	unsigned int half_offset = 0;
 	unsigned int end = 0;
 	unsigned int idx_file = 0;
 };
@@ -183,8 +184,6 @@ int main(int argc, char* argv[]) {
 
 		unsigned int size_section = MAX_RAM_SIZE / size_tmp_file;
 		unsigned int block_size_section = size_section / sizeof(KeyValue);
-		printf("section : %u\n", block_size_section);
-		print_duration();
 		// merge tmp file
 		priority_queue<KeyValueNodeFile> pq;
 		vector<thread> v;
@@ -196,18 +195,20 @@ int main(int argc, char* argv[]) {
 				ifs.close();
 			}});
 		}
+		thread* t_read[4];
 		for (unsigned int i = 0; i < size_tmp_file; i++) {
 			v[i].join();
+			t_read[i] = new thread{[ = ](){}};
 			struct KeyValueNodeFile kvnf;
 			kvnf.idx = 0;
 			kvnf.offset = block_size_section;
+			kvnf.half_offset = kvnf.offset / 2;
 			kvnf.end = MAX_RAM_SIZE / sizeof(KeyValue);
 			kvnf.idx_file = i;
 			kvnf.kv = g_kv + i * block_size_section;
 			pq.push(std::move(kvnf));
 		}
 
-		print_duration();
 		int cur_out = 0;
 		int cur_write_idx = 0;
 		unsigned int HALF_MAX_KV_OUT_SIZE = MAX_KV_OUT_SIZE / 2;
@@ -235,18 +236,38 @@ int main(int argc, char* argv[]) {
 			}
 			kvnf.idx++;
 			if (kvnf.idx == kvnf.end) {
+				t_read[kvnf.idx_file]->join();
 				string name_tmp_file = "t_" + to_string(kvnf.idx_file) + ".data";
 				remove(name_tmp_file.c_str());
 				continue;
 			}
+			if (kvnf.idx == kvnf.half_offset && kvnf.offset != kvnf.end) {
+				t_read[kvnf.idx_file]->join();
+				unsigned int idx_file = kvnf.idx_file;
+				unsigned int offset = kvnf.offset;
+				t_read[kvnf.idx_file] = new thread{[idx_file, offset, block_size_section, g_kv]() {
+					unsigned int read_size = block_size_section / 2 * sizeof(KeyValue);
+					string name_tmp_file = "t_" + to_string(idx_file) + ".data";
+					ifstream ifs(name_tmp_file, ios::binary | ios::in);
+					ifs.seekg(offset * sizeof(KeyValue));
+					ifs.read(&g_kv->key[idx_file * block_size_section * sizeof(KeyValue)], read_size);
+					ifs.close();
+				}};
+			}
 			if (kvnf.idx == kvnf.offset) {
-				unsigned int read_size = min(block_size_section, kvnf.end - kvnf.idx) * sizeof(KeyValue);
+				t_read[kvnf.idx_file]->join();
 				kvnf.offset = kvnf.idx + min(block_size_section, kvnf.end - kvnf.idx);
-				string name_tmp_file = "t_" + to_string(kvnf.idx_file) + ".data";
-				ifstream ifs(name_tmp_file, ios::binary | ios::in);
-				ifs.seekg(kvnf.idx * sizeof(KeyValue));
-				ifs.read(&g_kv->key[kvnf.idx_file * block_size_section * sizeof(KeyValue)], read_size);
-				ifs.close();
+				kvnf.half_offset = kvnf.idx + (kvnf.offset - kvnf.idx) / 2;
+				unsigned int idx_file = kvnf.idx_file;
+				unsigned int offset = kvnf.half_offset;
+				t_read[kvnf.idx_file] = new thread{[idx_file, offset, block_size_section, g_kv]() {
+					unsigned int read_size = block_size_section / 2 * sizeof(KeyValue);
+					string name_tmp_file = "t_" + to_string(idx_file) + ".data";
+					ifstream ifs(name_tmp_file, ios::binary | ios::in);
+					ifs.seekg(offset * sizeof(KeyValue));
+					ifs.read(&g_kv->key[((idx_file * block_size_section) + (block_size_section / 2)) * sizeof(KeyValue)], read_size);
+					ifs.close();
+				}};
 			}
 			kvnf.kv = g_kv + (kvnf.idx_file * block_size_section + kvnf.idx % block_size_section);
 			pq.push(std::move(kvnf));
@@ -257,7 +278,6 @@ int main(int argc, char* argv[]) {
 		}
 		ofs.close();
 	}
-	print_duration();
 	return 0;
 }
 
