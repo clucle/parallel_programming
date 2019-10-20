@@ -1,8 +1,8 @@
 CFLAGS := -std=c++14
 
 PROG := run
-OBJS := main.o worker.o
-HDRS := worker.hpp
+OBJS := main.o database.o worker.o
+HDRS := database.hpp worker.hpp
 
 all: $(PROG)
 $(PROG): $(OBJS)
@@ -13,6 +13,9 @@ main.o: main.cpp $(HDRS)
 
 worker.o: worker.cpp $(HDRS)
 	g++ $(CFLAGS) -c worker.cpp -o worker.o -I.
+
+database.o: database.cpp $(HDRS)
+	g++ $(CFLAGS) -c database.cpp -o database.o -I.
 
 clean:
 	rm *.o

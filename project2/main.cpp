@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <vector>
 
+#include "database.hpp"
 #include "worker.hpp"
 
 int main(int argc, char *argv[])
@@ -23,9 +24,11 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    std::unique_ptr<Database> db(new Database(N, R, E));
     std::vector<Worker> v_worker;
+
     for (int i = 0; i < N; i++) {
-        v_worker.emplace_back(i + 1);
+        v_worker.emplace_back(i + 1, db);
     }
 
     for (int i = 0; i < N; i++) {
