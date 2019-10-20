@@ -3,6 +3,14 @@
 
 #include <mutex>
 #include <set>
+#include <condition_variable>
+
+enum class ERecordLockState
+{
+    EWAIT,
+    EACQUIRE,
+    EDEADLOCK
+};
 
 class Database
 {
@@ -11,6 +19,9 @@ public:
     ~Database();
     size_t size();
     std::mutex &get_lock();
+    ERecordLockState rd_lock(int tid, std::unique_ptr<std::condition_variable> &cv);
+    ERecordLockState wr_lock();
+    void rw_unlock();
 
 private:
     std::mutex m;

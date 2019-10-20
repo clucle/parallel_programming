@@ -21,3 +21,17 @@ size_t Database::size()
 {
     return sz;
 }
+
+ERecordLockState Database::rd_lock(int tid, std::unique_ptr<std::condition_variable> &cv)
+{
+    // do something
+    return ERecordLockState::EWAIT;
+}
+
+ERecordLockState Database::wr_lock()
+{
+}
+
+void Database::rw_unlock()
+{
+}

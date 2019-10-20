@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <condition_variable>
 #include "database.hpp"
 
 class Worker

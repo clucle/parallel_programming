@@ -14,10 +14,17 @@ void Worker::join_thread()
 
 void Worker::work()
 {
-    std::mutex &g_lk = db->get_lock();
+    std::mutex &g_mutex = db->get_lock();
+    std::unique_lock<std::mutex> g_lk(g_mutex, std::defer_lock);
+    std::unique_ptr<std::condition_variable> cv(new std::condition_variable);
+
     set_i_j_k();
     g_lk.lock();
     std::cout << "tid : " << tid << ' ' << i << ' ' << j << ' ' << k << '\n';
+    ERecordLockState state = db->rd_lock(3, cv);
+    if (state == ERecordLockState::EWAIT) {
+        cv->wait(g_lk);
+    }
     g_lk.unlock();
 }
 
