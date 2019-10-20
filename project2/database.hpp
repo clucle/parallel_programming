@@ -7,9 +7,8 @@ class Database
 {
 public:
     Database(int N, int R, int E);
-    void acquire();
-    void release();
     size_t size();
+    std::mutex &get_lock();
 
 private:
     std::mutex m;

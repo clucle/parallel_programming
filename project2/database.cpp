@@ -4,16 +4,12 @@ Database::Database(int N, int R, int E) : sz(R)
 {
 }
 
-void Database::acquire()
+std::mutex &Database::get_lock()
 {
-    m.lock();
+    return m;
 }
 
-void Database::release()
+size_t Database::size()
 {
-    m.unlock();
-}
-
-size_t Database::size() {
     return sz;
 }

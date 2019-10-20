@@ -14,10 +14,11 @@ void Worker::join_thread()
 
 void Worker::work()
 {
+    std::mutex &g_lk = db->get_lock();
     set_i_j_k();
-    db->acquire();
+    g_lk.lock();
     std::cout << "tid : " << tid << ' ' << i << ' ' << j << ' ' << k << '\n';
-    db->release();
+    g_lk.unlock();
 }
 
 void Worker::set_i_j_k()
