@@ -27,15 +27,18 @@ int main(int argc, char *argv[])
     std::unique_ptr<Database> db(new Database(N, R, E));
     std::vector<Worker> v_worker;
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         v_worker.emplace_back(i + 1, db);
     }
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         v_worker[i].run_thread();
     }
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++)
+    {
         v_worker[i].join_thread();
     }
 }

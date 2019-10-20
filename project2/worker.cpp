@@ -14,11 +14,22 @@ void Worker::join_thread()
 
 void Worker::work()
 {
+    set_i_j_k();
     db->acquire();
-    std::cout << "tid : " << tid << '\n';
+    std::cout << "tid : " << tid << ' ' << i << ' ' << j << ' ' << k << '\n';
     db->release();
 }
 
 void Worker::set_i_j_k()
 {
+    int max_val = db->size();
+    std::vector<int> v;
+    for (int i = 1; i <= max_val; i++)
+        v.push_back(i);
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::shuffle(v.begin(), v.end(), mt);
+    i = v[0];
+    j = v[1];
+    k = v[2];
 }

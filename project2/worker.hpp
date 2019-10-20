@@ -3,6 +3,8 @@
 
 #include <thread>
 #include <iostream>
+#include <vector>
+#include <random>
 #include "database.hpp"
 
 class Worker
