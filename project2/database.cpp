@@ -6,9 +6,11 @@ Database::Database(int N, int R, int E) : sz(R)
     edges_in = new std::set<int>[N + 1];
     arr_record_state = new ERecordState[R + 1];
     arr_list_record_lock = new std::list<RecordLock *>[R + 1];
+    records = new long long[R + 1];
     for (int i = 1; i <= R; i++)
     {
         arr_record_state[i] = ERecordState::ESHARE;
+        records[i] = 100;
     }
 }
 
@@ -18,6 +20,7 @@ Database::~Database()
     delete[] edges_in;
     delete[] arr_record_state;
     delete[] arr_list_record_lock;
+    delete[] records;
 }
 
 std::mutex &Database::get_lock()
@@ -107,11 +110,12 @@ void Database::rw_unlock(int rid, int tid)
         }
     }
 
-    if (arr_list_record_lock[rid].size() == 0) {
+    if (arr_list_record_lock[rid].size() == 0)
+    {
         arr_record_state[rid] = ERecordState::ESHARE;
-        return ;
+        return;
     }
-    
+
     RecordLock *r_lk_first = *arr_list_record_lock[rid].begin();
     if (r_lk_first->get_record_lock_state() == ERecordLockState::EWAIT)
     {
@@ -139,6 +143,16 @@ void Database::rw_unlock(int rid, int tid)
             r_lk_first->set_record_lock_state(ERecordLockState::EACQUIRE);
         }
     }
+}
+
+long long Database::get_record(int idx)
+{
+    return records[idx];
+}
+
+void Database::set_record(int idx, int record)
+{
+    records[idx] = record;
 }
 
 bool Database::is_deadlock(int rid, int tid)

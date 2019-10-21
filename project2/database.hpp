@@ -18,10 +18,14 @@ public:
     ERecordLockState rd_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv);
     ERecordLockState wr_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv);
     void rw_unlock(int rid, int tid);
+    long long get_record(int idx);
+    void set_record(int idx, int record);
 
 private:
     std::mutex m;
     size_t sz;
+    long long *records;
+
     std::set<int> *edges_out;
     std::set<int> *edges_in;
     ERecordState *arr_record_state;

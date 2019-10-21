@@ -35,7 +35,7 @@ void Worker::work()
         }
         std::cout << "tid : " << tid << " record : " << i << " read acquire\n";
         g_lk.unlock();
-        record_i = 3; // TODO: db i read
+        record_i = db->get_record(i);
 
         if (TEST_DEADLOCK)
             std::this_thread::yield();
@@ -56,7 +56,9 @@ void Worker::work()
         }
         std::cout << "tid : " << tid << " record : " << j << " write1 acquire\n";
         g_lk.unlock();
-        record_j = 4; // TODO: db j write;
+        record_j = db->get_record(j);
+        record_j += record_i + 1;
+        db->set_record(j, record_j);
 
         if (TEST_DEADLOCK)
             std::this_thread::yield();
@@ -66,7 +68,8 @@ void Worker::work()
         if (r_lk_state == ERecordLockState::EDEADLOCK)
         {
             std::cout << "tid : " << tid << " record : " << k << " write2 deadlock\n";
-            // TODO: db j write
+            record_j -= record_i + 1;
+            db->set_record(j, record_j);
             db->rw_unlock(i, tid);
             db->rw_unlock(j, tid);
             g_lk.unlock();
@@ -79,13 +82,17 @@ void Worker::work()
         }
         std::cout << "tid : " << tid << " record : " << k << " write2 acquire\n";
         g_lk.unlock();
-        record_k = 4; // TODO: db k write;
+        record_k = db->get_record(k);
+        record_k -= record_i;
+        db->set_record(k, record_k);
 
         // committing phase
         g_lk.lock();
         db->rw_unlock(i, tid);
         db->rw_unlock(j, tid);
         db->rw_unlock(k, tid);
+        std::cout << " >> " << i << ' ' << j << ' ' << k << ' '
+                  << record_i << ' ' << record_j << ' ' << record_k << '\n';
         g_lk.unlock();
         break;
     }
