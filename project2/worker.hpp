@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <random>
+#include <algorithm>
 #include <condition_variable>
 #include "database.hpp"
 

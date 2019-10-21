@@ -6,7 +6,7 @@ HDRS := database.hpp worker.hpp recordlock.hpp
 
 all: $(PROG)
 $(PROG): $(OBJS)
-	g++ -o $(PROG) $(OBJS) $(CFLAGS)
+	g++ -o $(PROG) $(OBJS) $(CFLAGS) -lpthread
 
 main.o: main.cpp $(HDRS)
 	g++ $(CFLAGS) -c main.cpp -o main.o -I.
