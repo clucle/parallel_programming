@@ -90,8 +90,45 @@ ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condit
     return r_lk->get_record_lock_state();
 }
 
-void Database::rw_unlock()
+void Database::rw_unlock(int rid, int tid)
 {
+    remove_edges_dependency(tid);
+    for (auto iter = arr_list_record_lock[rid].begin();
+         iter != arr_list_record_lock[rid].end();
+         ++iter)
+    {
+        RecordLock *r_lk = *iter;
+        if (r_lk->get_tid() == tid)
+        {
+            arr_list_record_lock[rid].erase(iter);
+            break;
+        }
+    }
+    RecordLock *r_lk_first = *arr_list_record_lock[rid].begin();
+    if (r_lk_first->get_record_lock_state() == ERecordLockState::EWAIT)
+    {
+        if (r_lk_first->get_record_state() == ERecordState::ESHARE)
+        {
+            arr_record_state[rid] = ERecordState::ESHARE;
+            for (auto iter = arr_list_record_lock[rid].begin();
+                 iter != arr_list_record_lock[rid].end();
+                 ++iter)
+            {
+                RecordLock *r_lk = *iter;
+                if (r_lk->get_record_state() == ERecordState::EEXECUTE)
+                {
+                    arr_record_state[rid] = ERecordState::EEXECUTE;
+                    break;
+                }
+                r_lk->set_record_lock_state(ERecordLockState::EACQUIRE);
+            }
+        }
+        else
+        {
+            arr_record_state[rid] = ERecordState::EEXECUTE;
+            r_lk_first->set_record_lock_state(ERecordLockState::EACQUIRE);
+        }
+    }
 }
 
 bool Database::is_deadlock(int rid, int tid)

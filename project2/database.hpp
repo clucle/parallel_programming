@@ -17,7 +17,7 @@ public:
     std::mutex &get_lock();
     ERecordLockState rd_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv);
     ERecordLockState wr_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv);
-    void rw_unlock();
+    void rw_unlock(int rid, int tid);
 
 private:
     std::mutex m;
