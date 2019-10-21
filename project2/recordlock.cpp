@@ -5,6 +5,15 @@ RecordLock::RecordLock(int tid, ERecordState r_state, std::unique_ptr<std::condi
 {
 }
 
+int RecordLock::get_tid()
+{
+    return tid;
+}
+
+ERecordState RecordLock::get_record_state() {
+    return r_state;
+}
+
 ERecordLockState RecordLock::get_record_lock_state()
 {
     return r_lk_state;

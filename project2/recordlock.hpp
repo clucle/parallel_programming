@@ -20,6 +20,8 @@ class RecordLock
 {
 public:
     RecordLock(int tid, ERecordState r_state, std::unique_ptr<std::condition_variable> &cv);
+    int get_tid();
+    ERecordState get_record_state();
     ERecordLockState get_record_lock_state();
     void set_record_lock_state(ERecordLockState state);
 

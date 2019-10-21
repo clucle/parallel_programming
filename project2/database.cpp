@@ -40,6 +40,20 @@ ERecordLockState Database::rd_lock(int rid, int tid, std::unique_ptr<std::condit
     }
     else if (arr_record_state[rid] == ERecordState::EEXECUTE)
     {
+        bool flag_dependency = false;
+        for (auto iter = arr_list_record_lock[rid].rbegin();
+             iter != arr_list_record_lock[rid].rend();
+             --iter)
+        {
+            RecordLock *r_lk = *iter;
+            if (!flag_dependency && r_lk->get_record_state() == ERecordState::ESHARE)
+            {
+                continue;
+            }
+            flag_dependency = true;
+            edges_in[tid].insert(r_lk->get_tid());
+            edges_out[r_lk->get_tid()].insert(tid);
+        }
         r_lk->set_record_lock_state(ERecordLockState::EWAIT);
     }
 
