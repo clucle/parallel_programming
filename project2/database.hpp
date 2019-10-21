@@ -15,7 +15,7 @@ public:
     size_t size();
     std::mutex &get_lock();
     ERecordLockState rd_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv);
-    ERecordLockState wr_lock();
+    ERecordLockState wr_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv);
     void rw_unlock();
 
 private:
@@ -25,6 +25,8 @@ private:
     std::set<int> *edges_in;
     ERecordState *arr_record_state;
     std::list<RecordLock *> *arr_list_record_lock;
+
+    bool is_deadlock(int rid, int tid);
 };
 
 #endif

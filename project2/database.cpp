@@ -61,10 +61,23 @@ ERecordLockState Database::rd_lock(int rid, int tid, std::unique_ptr<std::condit
     return r_lk->get_record_lock_state();
 }
 
-ERecordLockState Database::wr_lock()
+ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv)
 {
+    bool flag_deadlock = is_deadlock(rid, tid);
+    if (flag_deadlock)
+    {
+        return ERecordLockState::EDEADLOCK;
+    }
+    RecordLock *r_lk = new RecordLock(tid, ERecordState::ESHARE, cv);
+    return r_lk->get_record_lock_state();
 }
 
 void Database::rw_unlock()
 {
+}
+
+bool Database::is_deadlock(int rid, int tid)
+{
+    // TODO: deadlock check
+    return false;
 }
