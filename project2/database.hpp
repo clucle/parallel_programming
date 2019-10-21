@@ -4,6 +4,7 @@
 #include <mutex>
 #include <set>
 #include <condition_variable>
+#include <list>
 #include "recordlock.hpp"
 
 class Database
@@ -22,7 +23,8 @@ private:
     size_t sz;
     std::set<int> *edges_out;
     std::set<int> *edges_in;
-    ERecordState *records_state;
+    ERecordState *arr_record_state;
+    std::list<RecordLock *> *arr_list_record_lock;
 };
 
 #endif

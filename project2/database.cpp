@@ -4,10 +4,11 @@ Database::Database(int N, int R, int E) : sz(R)
 {
     edges_out = new std::set<int>[N + 1];
     edges_in = new std::set<int>[N + 1];
-    records_state = new ERecordState[R + 1];
+    arr_record_state = new ERecordState[R + 1];
+    arr_list_record_lock = new std::list<RecordLock *>[R + 1];
     for (int i = 1; i <= R; i++)
     {
-        records_state[i] = ERecordState::ESHARE;
+        arr_record_state[i] = ERecordState::ESHARE;
     }
 }
 
@@ -15,7 +16,8 @@ Database::~Database()
 {
     delete[] edges_out;
     delete[] edges_in;
-    delete[] records_state;
+    delete[] arr_record_state;
+    delete[] arr_list_record_lock;
 }
 
 std::mutex &Database::get_lock()
@@ -30,16 +32,19 @@ size_t Database::size()
 
 ERecordLockState Database::rd_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv)
 {
-    ERecordLockState ret = ERecordLockState::EWAIT;
-    if (records_state[rid] == ERecordState::ESHARE)
+    RecordLock *r_lk = new RecordLock(tid, ERecordState::ESHARE, cv);
+
+    if (arr_record_state[rid] == ERecordState::ESHARE)
     {
-        ret = ERecordLockState::EACQUIRE;
+        r_lk->set_record_lock_state(ERecordLockState::EACQUIRE);
     }
-    else if (records_state[rid] == ERecordState::EEXECUTE)
+    else if (arr_record_state[rid] == ERecordState::EEXECUTE)
     {
-        ret = ERecordLockState::EWAIT;
+        r_lk->set_record_lock_state(ERecordLockState::EWAIT);
     }
-    return ret;
+
+    arr_list_record_lock[rid].push_back(std::move(r_lk));
+    return r_lk->get_record_lock_state();
 }
 
 ERecordLockState Database::wr_lock()

@@ -19,11 +19,14 @@ enum class ERecordState
 class RecordLock
 {
 public:
-    RecordLock(int tid, ERecordState state, std::unique_ptr<std::condition_variable> &cv);
+    RecordLock(int tid, ERecordState r_state, std::unique_ptr<std::condition_variable> &cv);
+    ERecordLockState get_record_lock_state();
+    void set_record_lock_state(ERecordLockState state);
 
 private:
     int tid;
-    ERecordState state;
+    ERecordState r_state;
+    ERecordLockState r_lk_state;
     std::unique_ptr<std::condition_variable> &cv;
 };
 
