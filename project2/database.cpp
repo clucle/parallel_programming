@@ -66,9 +66,27 @@ ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condit
     bool flag_deadlock = is_deadlock(rid, tid);
     if (flag_deadlock)
     {
+        remove_edges_dependency(tid);
         return ERecordLockState::EDEADLOCK;
     }
+    arr_record_state[rid] = ERecordState::EEXECUTE;
     RecordLock *r_lk = new RecordLock(tid, ERecordState::ESHARE, cv);
+    if (arr_list_record_lock[rid].size() == 0)
+    {
+        r_lk->set_record_lock_state(ERecordLockState::EACQUIRE);
+    }
+    else
+    {
+        for (auto iter = arr_list_record_lock[rid].rbegin();
+             iter != arr_list_record_lock[rid].rend();
+             --iter)
+        {
+            RecordLock *r_lk = *iter;
+            edges_in[tid].insert(r_lk->get_tid());
+            edges_out[r_lk->get_tid()].insert(tid);
+        }
+        r_lk->set_record_lock_state(ERecordLockState::EWAIT);
+    }
     return r_lk->get_record_lock_state();
 }
 
@@ -83,7 +101,7 @@ bool Database::is_deadlock(int rid, int tid)
          iter != arr_list_record_lock[rid].end();
          ++iter)
     {
-        RecordLock* r_lk = *iter;
+        RecordLock *r_lk = *iter;
         tid_should_not_go.insert(r_lk->get_tid());
     }
     std::set<int> visited;
@@ -91,18 +109,30 @@ bool Database::is_deadlock(int rid, int tid)
 
     q.push(tid);
     visited.insert(tid);
-    while (!q.empty()) {
+    while (!q.empty())
+    {
         int here = q.front();
         q.pop();
-        if (tid_should_not_go.find(here) != tid_should_not_go.end()) {
+        if (tid_should_not_go.find(here) != tid_should_not_go.end())
+        {
             return true;
         }
-        for (auto e: edges_out[here]) {
-            if (visited.find(e) != visited.end()) continue;
+        for (auto e : edges_out[here])
+        {
+            if (visited.find(e) != visited.end())
+                continue;
             visited.insert(e);
             q.push(e);
         }
     }
-
     return false;
+}
+
+void Database::remove_edges_dependency(int tid)
+{
+    for (auto e : edges_in[tid])
+    {
+        edges_out[e].erase(tid);
+    }
+    edges_in[tid].clear();
 }

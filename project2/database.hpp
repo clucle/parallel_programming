@@ -28,6 +28,7 @@ private:
     std::list<RecordLock *> *arr_list_record_lock;
 
     bool is_deadlock(int rid, int tid);
+    void remove_edges_dependency(int tid);
 };
 
 #endif
