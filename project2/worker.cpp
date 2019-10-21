@@ -38,7 +38,7 @@ void Worker::work()
 
         g_lk.lock();
         r_lk_state = db->wr_lock(j, tid, cv);
-        if (r_lk_state == ERecordLockState::EDEADLOCK)
+        if (r_lk_state == ERecordLockState::EDEAD_LOCK)
         {
             db->rw_unlock(i, tid);
             g_lk.unlock();
@@ -57,7 +57,7 @@ void Worker::work()
 
         g_lk.lock();
         r_lk_state = db->wr_lock(k, tid, cv);
-        if (r_lk_state == ERecordLockState::EDEADLOCK)
+        if (r_lk_state == ERecordLockState::EDEAD_LOCK)
         {
             record_j -= record_i + 1;
             db->set_record(j, record_j);

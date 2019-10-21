@@ -7,7 +7,7 @@ enum class ERecordLockState
 {
     EWAIT,
     EACQUIRE,
-    EDEADLOCK
+    EDEAD_LOCK
 };
 
 enum class ERecordState

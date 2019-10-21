@@ -71,7 +71,7 @@ ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condit
     if (flag_deadlock)
     {
         remove_edges_dependency(tid);
-        return ERecordLockState::EDEADLOCK;
+        return ERecordLockState::EDEAD_LOCK;
     }
     arr_record_state[rid] = ERecordState::EEXECUTE;
     RecordLock *r_lk = new RecordLock(tid, ERecordState::EEXECUTE, cv);
