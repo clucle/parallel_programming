@@ -20,6 +20,8 @@ public:
     void rw_unlock(int rid, int tid);
     long long get_record(int idx);
     void set_record(int idx, int record);
+    int commit();
+    int get_limit_commit_id();
 
 private:
     std::mutex m;
@@ -33,6 +35,9 @@ private:
 
     bool is_deadlock(int rid, int tid);
     void remove_edges_dependency(int tid);
+
+    int commit_id;
+    int limit_commit_id;
 };
 
 #endif

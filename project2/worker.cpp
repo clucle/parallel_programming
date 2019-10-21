@@ -91,10 +91,19 @@ void Worker::work()
         db->rw_unlock(i, tid);
         db->rw_unlock(j, tid);
         db->rw_unlock(k, tid);
-        std::cout << " >> " << i << ' ' << j << ' ' << k << ' '
-                  << record_i << ' ' << record_j << ' ' << record_k << '\n';
+        int commit_id = db->commit();
+        if (commit_id > db->get_limit_commit_id())
+        {
+            record_j -= record_i + 1;
+            record_k += record_i;
+            db->set_record(j, record_j);
+            db->set_record(k, record_k);
+            g_lk.unlock();
+            break;
+        }
+        std::cout << " >> " << commit_id << ' ' << i << ' ' << j << ' ' << k << ' '
+                    << record_i << ' ' << record_j << ' ' << record_k << '\n';
         g_lk.unlock();
-        break;
     }
 }
 

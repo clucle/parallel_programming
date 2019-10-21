@@ -1,6 +1,6 @@
 #include "database.hpp"
 
-Database::Database(int N, int R, int E) : sz(R)
+Database::Database(int N, int R, int E) : sz(R), limit_commit_id(E)
 {
     edges_out = new std::set<int>[N + 1];
     edges_in = new std::set<int>[N + 1];
@@ -12,6 +12,7 @@ Database::Database(int N, int R, int E) : sz(R)
         arr_record_state[i] = ERecordState::ESHARE;
         records[i] = 100;
     }
+    commit_id = 0;
 }
 
 Database::~Database()
@@ -155,6 +156,16 @@ void Database::set_record(int idx, int record)
     records[idx] = record;
 }
 
+int Database::commit()
+{
+    return ++commit_id;
+}
+
+int Database::get_limit_commit_id()
+{
+    return limit_commit_id;
+}
+
 bool Database::is_deadlock(int rid, int tid)
 {
     std::set<int> tid_should_not_go;
@@ -195,5 +206,10 @@ void Database::remove_edges_dependency(int tid)
     {
         edges_out[e].erase(tid);
     }
+    for (auto e : edges_out[tid])
+    {
+        edges_in[e].erase(tid);
+    }
+    edges_out[tid].clear();
     edges_in[tid].clear();
 }
