@@ -53,7 +53,6 @@ ERecordLockState Database::rd_lock(int rid, int tid, std::unique_ptr<std::condit
             flag_dependency = true;
             edges_in[tid].insert(r_lk_iter->get_tid());
             edges_out[r_lk_iter->get_tid()].insert(tid);
-            std::cout << r_lk_iter->get_tid() << "_ insert " << tid << '\n';
         }
         r_lk->set_record_lock_state(ERecordLockState::EWAIT);
     }
@@ -85,7 +84,6 @@ ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condit
             RecordLock *r_lk_iter = *iter;
             edges_in[tid].insert(r_lk_iter->get_tid());
             edges_out[r_lk_iter->get_tid()].insert(tid);
-            std::cout << r_lk_iter->get_tid() << "_ insert " << tid << '\n';
         }
         r_lk->set_record_lock_state(ERecordLockState::EWAIT);
     }
@@ -96,7 +94,6 @@ ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condit
 
 void Database::rw_unlock(int rid, int tid)
 {
-    std::cout << "RWUNLOCK Call rid : " << rid << ' ' << " tid : "<< tid << '\n'; 
     remove_edges_dependency(tid);
     for (auto iter = arr_list_record_lock[rid].begin();
          iter != arr_list_record_lock[rid].end();
@@ -109,10 +106,9 @@ void Database::rw_unlock(int rid, int tid)
             break;
         }
     }
-    std::cout << "remove my node\n"; 
+
     if (arr_list_record_lock[rid].size() == 0) {
         arr_record_state[rid] = ERecordState::ESHARE;
-        std::cout << "EMPTY!!!\n";
         return ;
     }
     
@@ -143,29 +139,20 @@ void Database::rw_unlock(int rid, int tid)
             r_lk_first->set_record_lock_state(ERecordLockState::EACQUIRE);
         }
     }
-    std::cout << "UNLOCK\n";
 }
 
 bool Database::is_deadlock(int rid, int tid)
 {
-    std::cout << "dead lock check rid : " << rid << ' ' << "tid : " << tid << '\n';
     std::set<int> tid_should_not_go;
     for (auto iter = arr_list_record_lock[rid].begin();
          iter != arr_list_record_lock[rid].end();
          ++iter)
     {
         RecordLock *r_lk = *iter;
-        std::cout << r_lk->get_tid() << ' ';
         tid_should_not_go.insert(r_lk->get_tid());
     }
     std::set<int> visited;
     std::queue<int> q;
-    std::cout << "should not go\n";
-    for (auto e : tid_should_not_go)
-    {
-        std::cout << e << ' ';
-    }
-    std::cout << '\n';
 
     q.push(tid);
     visited.insert(tid);
