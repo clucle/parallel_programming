@@ -4,19 +4,7 @@
 #include <mutex>
 #include <set>
 #include <condition_variable>
-
-enum class ERecordLockState
-{
-    EWAIT,
-    EACQUIRE,
-    EDEADLOCK
-};
-
-enum class ERecordState
-{
-    ESHARE,
-    EEXECUTE
-};
+#include "recordlock.hpp"
 
 class Database
 {

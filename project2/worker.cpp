@@ -21,8 +21,9 @@ void Worker::work()
     set_i_j_k();
     g_lk.lock();
     std::cout << "tid : " << tid << ' ' << i << ' ' << j << ' ' << k << '\n';
-    ERecordLockState state = db->rd_lock(3, cv);
-    if (state == ERecordLockState::EWAIT) {
+    ERecordLockState state = db->rd_lock(i, 3, cv);
+    if (state == ERecordLockState::EWAIT)
+    {
         cv->wait(g_lk);
     }
     g_lk.unlock();
