@@ -78,6 +78,31 @@ void Database::rw_unlock()
 
 bool Database::is_deadlock(int rid, int tid)
 {
-    // TODO: deadlock check
+    std::set<int> tid_should_not_go;
+    for (auto iter = arr_list_record_lock[rid].begin();
+         iter != arr_list_record_lock[rid].end();
+         ++iter)
+    {
+        RecordLock* r_lk = *iter;
+        tid_should_not_go.insert(r_lk->get_tid());
+    }
+    std::set<int> visited;
+    std::queue<int> q;
+
+    q.push(tid);
+    visited.insert(tid);
+    while (!q.empty()) {
+        int here = q.front();
+        q.pop();
+        if (tid_should_not_go.find(here) != tid_should_not_go.end()) {
+            return true;
+        }
+        for (auto e: edges_out[here]) {
+            if (visited.find(e) != visited.end()) continue;
+            visited.insert(e);
+            q.push(e);
+        }
+    }
+
     return false;
 }

@@ -5,6 +5,7 @@
 #include <set>
 #include <condition_variable>
 #include <list>
+#include <queue>
 #include "recordlock.hpp"
 
 class Database
