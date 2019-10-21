@@ -19,7 +19,7 @@ public:
     ERecordLockState wr_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv);
     void rw_unlock(int rid, int tid);
     long long get_record(int idx);
-    void set_record(int idx, int record);
+    void set_record(int idx, long long record);
     int commit();
     int get_limit_commit_id();
 

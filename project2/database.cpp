@@ -47,7 +47,7 @@ ERecordLockState Database::rd_lock(int rid, int tid, std::unique_ptr<std::condit
         bool flag_dependency = false;
         for (auto iter = arr_list_record_lock[rid].rbegin();
              iter != arr_list_record_lock[rid].rend();
-             --iter)
+             ++iter)
         {
             RecordLock *r_lk_iter = *iter;
             if (!flag_dependency && r_lk_iter->get_record_state() == ERecordState::ESHARE)
@@ -83,7 +83,7 @@ ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condit
     {
         for (auto iter = arr_list_record_lock[rid].rbegin();
              iter != arr_list_record_lock[rid].rend();
-             --iter)
+             ++iter)
         {
             RecordLock *r_lk_iter = *iter;
             edges_in[tid].insert(r_lk_iter->get_tid());
@@ -107,6 +107,7 @@ void Database::rw_unlock(int rid, int tid)
         if (r_lk_iter->get_tid() == tid)
         {
             arr_list_record_lock[rid].erase(iter);
+            delete r_lk_iter;
             break;
         }
     }
@@ -133,15 +134,15 @@ void Database::rw_unlock(int rid, int tid)
                     arr_record_state[rid] = ERecordState::EEXECUTE;
                     break;
                 }
-                r_lk_iter->wake_up_worker();
                 r_lk_iter->set_record_lock_state(ERecordLockState::EACQUIRE);
+                r_lk_iter->wake_up_worker();
             }
         }
         else
         {
             arr_record_state[rid] = ERecordState::EEXECUTE;
-            r_lk_first->wake_up_worker();
             r_lk_first->set_record_lock_state(ERecordLockState::EACQUIRE);
+            r_lk_first->wake_up_worker();
         }
     }
 }
@@ -151,7 +152,7 @@ long long Database::get_record(int idx)
     return records[idx];
 }
 
-void Database::set_record(int idx, int record)
+void Database::set_record(int idx, long long record)
 {
     records[idx] = record;
 }
@@ -210,6 +211,7 @@ void Database::remove_edges_dependency(int tid)
     {
         edges_in[e].erase(tid);
     }
+
     edges_out[tid].clear();
     edges_in[tid].clear();
 }

@@ -26,48 +26,39 @@ void Worker::work()
     {
         set_i_j_k();
         g_lk.lock();
-        std::cout << "tid : " << tid << ' ' << i << ' ' << j << ' ' << k << '\n';
         r_lk_state = db->rd_lock(i, tid, cv);
         if (r_lk_state == ERecordLockState::EWAIT)
         {
-            std::cout << "tid : " << tid << " record : " << i << " read wait\n";
             cv->wait(g_lk);
         }
-        std::cout << "tid : " << tid << " record : " << i << " read acquire\n";
         g_lk.unlock();
         record_i = db->get_record(i);
 
-        if (TEST_DEADLOCK)
-            std::this_thread::yield();
+        if (TEST_DEADLOCK) std::this_thread::yield();
 
         g_lk.lock();
         r_lk_state = db->wr_lock(j, tid, cv);
         if (r_lk_state == ERecordLockState::EDEADLOCK)
         {
-            std::cout << "tid : " << tid << " record : " << j << " write1 deadlock\n";
             db->rw_unlock(i, tid);
             g_lk.unlock();
             continue;
         }
         else if (r_lk_state == ERecordLockState::EWAIT)
         {
-            std::cout << "tid : " << tid << " record : " << j << " write1 wait\n";
             cv->wait(g_lk);
         }
-        std::cout << "tid : " << tid << " record : " << j << " write1 acquire\n";
         g_lk.unlock();
         record_j = db->get_record(j);
         record_j += record_i + 1;
         db->set_record(j, record_j);
 
-        if (TEST_DEADLOCK)
-            std::this_thread::yield();
+        if (TEST_DEADLOCK) std::this_thread::yield();
 
         g_lk.lock();
         r_lk_state = db->wr_lock(k, tid, cv);
         if (r_lk_state == ERecordLockState::EDEADLOCK)
         {
-            std::cout << "tid : " << tid << " record : " << k << " write2 deadlock\n";
             record_j -= record_i + 1;
             db->set_record(j, record_j);
             db->rw_unlock(i, tid);
@@ -77,10 +68,8 @@ void Worker::work()
         }
         else if (r_lk_state == ERecordLockState::EWAIT)
         {
-            std::cout << "tid : " << tid << " record : " << k << " write2 wait\n";
             cv->wait(g_lk);
         }
-        std::cout << "tid : " << tid << " record : " << k << " write2 acquire\n";
         g_lk.unlock();
         record_k = db->get_record(k);
         record_k -= record_i;
@@ -101,6 +90,7 @@ void Worker::work()
             g_lk.unlock();
             break;
         }
+
         std::cout << " >> " << commit_id << ' ' << i << ' ' << j << ' ' << k << ' '
                     << record_i << ' ' << record_j << ' ' << record_k << '\n';
         g_lk.unlock();
