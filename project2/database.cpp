@@ -96,6 +96,7 @@ ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condit
 
 void Database::rw_unlock(int rid, int tid)
 {
+    std::cout << "RWUNLOCK Call rid : " << rid << ' ' << " tid : "<< tid << '\n'; 
     remove_edges_dependency(tid);
     for (auto iter = arr_list_record_lock[rid].begin();
          iter != arr_list_record_lock[rid].end();
@@ -108,6 +109,13 @@ void Database::rw_unlock(int rid, int tid)
             break;
         }
     }
+    std::cout << "remove my node\n"; 
+    if (arr_list_record_lock[rid].size() == 0) {
+        arr_record_state[rid] = ERecordState::ESHARE;
+        std::cout << "EMPTY!!!\n";
+        return ;
+    }
+    
     RecordLock *r_lk_first = *arr_list_record_lock[rid].begin();
     if (r_lk_first->get_record_lock_state() == ERecordLockState::EWAIT)
     {
@@ -135,6 +143,7 @@ void Database::rw_unlock(int rid, int tid)
             r_lk_first->set_record_lock_state(ERecordLockState::EACQUIRE);
         }
     }
+    std::cout << "UNLOCK\n";
 }
 
 bool Database::is_deadlock(int rid, int tid)
