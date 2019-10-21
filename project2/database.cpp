@@ -45,20 +45,21 @@ ERecordLockState Database::rd_lock(int rid, int tid, std::unique_ptr<std::condit
              iter != arr_list_record_lock[rid].rend();
              --iter)
         {
-            RecordLock *r_lk = *iter;
-            if (!flag_dependency && r_lk->get_record_state() == ERecordState::ESHARE)
+            RecordLock *r_lk_iter = *iter;
+            if (!flag_dependency && r_lk_iter->get_record_state() == ERecordState::ESHARE)
             {
                 continue;
             }
             flag_dependency = true;
-            edges_in[tid].insert(r_lk->get_tid());
-            edges_out[r_lk->get_tid()].insert(tid);
+            edges_in[tid].insert(r_lk_iter->get_tid());
+            edges_out[r_lk_iter->get_tid()].insert(tid);
+            std::cout << r_lk_iter->get_tid() << "_ insert " << tid << '\n';
         }
         r_lk->set_record_lock_state(ERecordLockState::EWAIT);
     }
-
+    ERecordLockState ret = r_lk->get_record_lock_state();
     arr_list_record_lock[rid].push_back(std::move(r_lk));
-    return r_lk->get_record_lock_state();
+    return ret;
 }
 
 ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv)
@@ -70,7 +71,7 @@ ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condit
         return ERecordLockState::EDEADLOCK;
     }
     arr_record_state[rid] = ERecordState::EEXECUTE;
-    RecordLock *r_lk = new RecordLock(tid, ERecordState::ESHARE, cv);
+    RecordLock *r_lk = new RecordLock(tid, ERecordState::EEXECUTE, cv);
     if (arr_list_record_lock[rid].size() == 0)
     {
         r_lk->set_record_lock_state(ERecordLockState::EACQUIRE);
@@ -81,13 +82,16 @@ ERecordLockState Database::wr_lock(int rid, int tid, std::unique_ptr<std::condit
              iter != arr_list_record_lock[rid].rend();
              --iter)
         {
-            RecordLock *r_lk = *iter;
-            edges_in[tid].insert(r_lk->get_tid());
-            edges_out[r_lk->get_tid()].insert(tid);
+            RecordLock *r_lk_iter = *iter;
+            edges_in[tid].insert(r_lk_iter->get_tid());
+            edges_out[r_lk_iter->get_tid()].insert(tid);
+            std::cout << r_lk_iter->get_tid() << "_ insert " << tid << '\n';
         }
         r_lk->set_record_lock_state(ERecordLockState::EWAIT);
     }
-    return r_lk->get_record_lock_state();
+    ERecordLockState ret = r_lk->get_record_lock_state();
+    arr_list_record_lock[rid].push_back(std::move(r_lk));
+    return ret;
 }
 
 void Database::rw_unlock(int rid, int tid)
@@ -97,8 +101,8 @@ void Database::rw_unlock(int rid, int tid)
          iter != arr_list_record_lock[rid].end();
          ++iter)
     {
-        RecordLock *r_lk = *iter;
-        if (r_lk->get_tid() == tid)
+        RecordLock *r_lk_iter = *iter;
+        if (r_lk_iter->get_tid() == tid)
         {
             arr_list_record_lock[rid].erase(iter);
             break;
@@ -114,14 +118,14 @@ void Database::rw_unlock(int rid, int tid)
                  iter != arr_list_record_lock[rid].end();
                  ++iter)
             {
-                RecordLock *r_lk = *iter;
-                if (r_lk->get_record_state() == ERecordState::EEXECUTE)
+                RecordLock *r_lk_iter = *iter;
+                if (r_lk_iter->get_record_state() == ERecordState::EEXECUTE)
                 {
                     arr_record_state[rid] = ERecordState::EEXECUTE;
                     break;
                 }
-                r_lk->wake_up_worker();
-                r_lk->set_record_lock_state(ERecordLockState::EACQUIRE);
+                r_lk_iter->wake_up_worker();
+                r_lk_iter->set_record_lock_state(ERecordLockState::EACQUIRE);
             }
         }
         else
@@ -135,16 +139,24 @@ void Database::rw_unlock(int rid, int tid)
 
 bool Database::is_deadlock(int rid, int tid)
 {
+    std::cout << "dead lock check rid : " << rid << ' ' << "tid : " << tid << '\n';
     std::set<int> tid_should_not_go;
     for (auto iter = arr_list_record_lock[rid].begin();
          iter != arr_list_record_lock[rid].end();
          ++iter)
     {
         RecordLock *r_lk = *iter;
+        std::cout << r_lk->get_tid() << ' ';
         tid_should_not_go.insert(r_lk->get_tid());
     }
     std::set<int> visited;
     std::queue<int> q;
+    std::cout << "should not go\n";
+    for (auto e : tid_should_not_go)
+    {
+        std::cout << e << ' ';
+    }
+    std::cout << '\n';
 
     q.push(tid);
     visited.insert(tid);
