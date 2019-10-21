@@ -120,12 +120,14 @@ void Database::rw_unlock(int rid, int tid)
                     arr_record_state[rid] = ERecordState::EEXECUTE;
                     break;
                 }
+                r_lk->wake_up_worker();
                 r_lk->set_record_lock_state(ERecordLockState::EACQUIRE);
             }
         }
         else
         {
             arr_record_state[rid] = ERecordState::EEXECUTE;
+            r_lk_first->wake_up_worker();
             r_lk_first->set_record_lock_state(ERecordLockState::EACQUIRE);
         }
     }

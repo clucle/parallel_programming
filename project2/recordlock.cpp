@@ -10,7 +10,8 @@ int RecordLock::get_tid()
     return tid;
 }
 
-ERecordState RecordLock::get_record_state() {
+ERecordState RecordLock::get_record_state()
+{
     return r_state;
 }
 
@@ -22,4 +23,9 @@ ERecordLockState RecordLock::get_record_lock_state()
 void RecordLock::set_record_lock_state(ERecordLockState state)
 {
     r_lk_state = state;
+}
+
+void RecordLock::wake_up_worker()
+{
+    cv->notify_one();
 }

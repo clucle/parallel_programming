@@ -24,6 +24,7 @@ public:
     ERecordState get_record_state();
     ERecordLockState get_record_lock_state();
     void set_record_lock_state(ERecordLockState state);
+    void wake_up_worker();
 
 private:
     int tid;
