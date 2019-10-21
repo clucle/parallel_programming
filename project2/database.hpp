@@ -12,6 +12,12 @@ enum class ERecordLockState
     EDEADLOCK
 };
 
+enum class ERecordState
+{
+    ESHARE,
+    EEXECUTE
+};
+
 class Database
 {
 public:
@@ -19,7 +25,7 @@ public:
     ~Database();
     size_t size();
     std::mutex &get_lock();
-    ERecordLockState rd_lock(int tid, std::unique_ptr<std::condition_variable> &cv);
+    ERecordLockState rd_lock(int rid, int tid, std::unique_ptr<std::condition_variable> &cv);
     ERecordLockState wr_lock();
     void rw_unlock();
 
@@ -28,6 +34,7 @@ private:
     size_t sz;
     std::set<int> *edges_out;
     std::set<int> *edges_in;
+    ERecordState *records_state;
 };
 
 #endif
