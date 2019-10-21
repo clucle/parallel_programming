@@ -39,6 +39,7 @@ ERecordLockState Database::rd_lock(int rid, int tid, std::unique_ptr<std::condit
     {
         ret = ERecordLockState::EWAIT;
     }
+    return ret;
 }
 
 ERecordLockState Database::wr_lock()
