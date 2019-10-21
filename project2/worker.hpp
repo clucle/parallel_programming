@@ -7,6 +7,8 @@
 #include <random>
 #include <algorithm>
 #include <condition_variable>
+#include <fstream> // ofstream
+#include <string> // to_string
 #include "database.hpp"
 
 class Worker

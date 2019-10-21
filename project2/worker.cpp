@@ -21,6 +21,7 @@ void Worker::work()
     std::unique_ptr<std::condition_variable> cv(new std::condition_variable);
     ERecordLockState r_lk_state;
     long long record_i, record_j, record_k;
+    std::ofstream ofs("thread" + std::to_string(tid) + ".txt", std::ios::out);
 
     while (true)
     {
@@ -91,10 +92,11 @@ void Worker::work()
             break;
         }
 
-        std::cout << " >> " << commit_id << ' ' << i << ' ' << j << ' ' << k << ' '
+        ofs << commit_id << ' ' << i << ' ' << j << ' ' << k << ' '
                     << record_i << ' ' << record_j << ' ' << record_k << '\n';
         g_lk.unlock();
     }
+    ofs.close();
 }
 
 void Worker::set_i_j_k()
