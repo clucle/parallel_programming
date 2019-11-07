@@ -4,23 +4,22 @@ SnapValue::SnapValue()
 {
     _label = 0;
     _value = 0;
-    _snap = new int[MAX_THREAD];
+    std::shared_ptr<int> temp(new int[MAX_THREAD], std::default_delete<int[]>());
+    _snap = temp;
     for (int i = 0; i < MAX_THREAD; i++)
     {
-        _snap[i] = 0;
+        _snap.get()[i] = 0;
     }
 }
 
-SnapValue::SnapValue(int label, int value, int *snap)
+SnapValue::SnapValue(int label, int value, std::shared_ptr<int> snap)
     : _label(label), _value(value)
 {
-    _snap = new int[MAX_THREAD];
-    memcpy(_snap, snap, sizeof(int) * MAX_THREAD);
+    _snap = snap;
 }
 
 SnapValue::~SnapValue()
 {
-    delete[] _snap;
 }
 
 bool SnapValue::operator==(const SnapValue &other) const

@@ -21,18 +21,16 @@ WaitFreeSnapshot::~WaitFreeSnapshot()
 
 void WaitFreeSnapshot::update(int tid, int value)
 {
-    int *snap = scan();
+    std::shared_ptr<int> snap = scan();
     SnapValue *old_value = _register[tid]->read();
-    int* old = old_value->_snap;
     old_value->_snap = snap;
     old_value->_label++;
     old_value->_value = value;
     // SnapValue *new_value = new SnapValue(old_value->_label + 1, value, snap);
     // _register[tid]->write(new_value);
-    delete old;
 }
 
-int *WaitFreeSnapshot::scan()
+std::shared_ptr<int> WaitFreeSnapshot::scan()
 {
     SnapValue **old_copy;
     SnapValue **new_copy;
@@ -53,8 +51,8 @@ int *WaitFreeSnapshot::scan()
             {
                 if (moved[j])
                 {
-                    int *ret = new int[_size];
-                    memcpy(ret, new_copy[j]->_snap, sizeof(int) * _size);
+                    std::shared_ptr<int> ret = new_copy[j]->_snap;
+
                     for (int i = 0; i < _size; i++)
                     {
                         delete old_copy[i];
@@ -84,11 +82,13 @@ int *WaitFreeSnapshot::scan()
             break;
         }
     }
-    int *ret = new int[_size];
-    for (int j = 0; j < _size; j++)
+
+    std::shared_ptr<int> ret(new int[MAX_THREAD], std::default_delete<int[]>());
+    for (int i = 0; i < MAX_THREAD; i++)
     {
-        ret[j] = new_copy[j]->_value;
+        ret.get()[i] = new_copy[i]->_value;
     }
+
     for (int i = 0; i < _size; i++)
     {
         delete old_copy[i];

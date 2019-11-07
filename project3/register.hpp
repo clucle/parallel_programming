@@ -4,12 +4,13 @@
 #define MAX_THREAD 32
 
 #include <cstring>
+#include <memory>
 
 class SnapValue
 {
 public:
     SnapValue();
-    SnapValue(int label, int value, int *snap);
+    SnapValue(int label, int value, std::shared_ptr<int> snap);
     ~SnapValue();
 
     bool operator==(const SnapValue &other) const;
@@ -18,7 +19,7 @@ public:
     // private:
     int _label;
     int _value;
-    int *_snap;
+    std::shared_ptr<int> _snap;
 };
 
 class Register

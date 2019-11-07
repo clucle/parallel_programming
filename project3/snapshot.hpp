@@ -8,7 +8,7 @@ public:
     WaitFreeSnapshot(int N);
     ~WaitFreeSnapshot();
     void update(int tid, int value);
-    int *scan();
+    std::shared_ptr<int> scan();
     int get_cnt();
 
 private:
