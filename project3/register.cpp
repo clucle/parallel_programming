@@ -5,12 +5,13 @@ SnapValue::SnapValue()
     _label = 0;
     _value = 0;
     _snap = new int[MAX_THREAD];
-    for (int i = 0; i < MAX_THREAD; i++) {
+    for (int i = 0; i < MAX_THREAD; i++)
+    {
         _snap[i] = 0;
     }
 }
 
-SnapValue::SnapValue(int label, int value, int* snap)
+SnapValue::SnapValue(int label, int value, int *snap)
     : _label(label), _value(value)
 {
     _snap = new int[MAX_THREAD];
@@ -52,7 +53,10 @@ SnapValue *Register::read()
 
 void Register::write(SnapValue *snap_value)
 {
-    SnapValue *old = _snap_value;
-    _snap_value = snap_value;
-    delete old;
+    for (int i = 0; i < MAX_THREAD; i++)
+    {
+        _snap_value->_snap[i] = 0;
+    }
+    _snap_value->_label = snap_value->_label;
+    _snap_value->_value = snap_value->_value;
 }

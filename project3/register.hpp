@@ -9,16 +9,16 @@ class SnapValue
 {
 public:
     SnapValue();
-    SnapValue(int label, int value, int* snap);
+    SnapValue(int label, int value, int *snap);
     ~SnapValue();
 
     bool operator==(const SnapValue &other) const;
     bool operator!=(const SnapValue &other) const;
 
-private:
+    // private:
     int _label;
     int _value;
-    int* _snap;
+    int *_snap;
 };
 
 class Register
@@ -30,7 +30,7 @@ public:
     void write(SnapValue *snap_value);
 
 private:
-    SnapValue* _snap_value;
+    SnapValue *_snap_value;
 };
 
 #endif
