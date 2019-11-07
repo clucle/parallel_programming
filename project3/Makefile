@@ -1,8 +1,8 @@
 CFLAGS := -std=c++14
 
 PROG := run
-OBJS := main.o snapshot.o register.o
-HDRS := snapshot.hpp register.hpp
+OBJS := main.o worker.o snapshot.o register.o
+HDRS := worker.hpp snapshot.hpp register.hpp
 
 all: $(PROG)
 $(PROG): $(OBJS)
@@ -16,6 +16,9 @@ register.o: register.cpp $(HDRS)
 
 snapshot.o: snapshot.cpp $(HDRS)
 	g++ $(CFLAGS) -c snapshot.cpp -o snapshot.o -I.
+
+worker.o: worker.cpp $(HDRS)
+	g++ $(CFLAGS) -c worker.cpp -o worker.o -I.
 
 clean:
 	rm *.o
