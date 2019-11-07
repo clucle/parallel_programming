@@ -53,10 +53,7 @@ SnapValue *Register::read()
 
 void Register::write(SnapValue *snap_value)
 {
-    for (int i = 0; i < MAX_THREAD; i++)
-    {
-        _snap_value->_snap[i] = 0;
-    }
+    _snap_value->_snap = snap_value->_snap;
     _snap_value->_label = snap_value->_label;
     _snap_value->_value = snap_value->_value;
 }
