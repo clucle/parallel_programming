@@ -23,8 +23,8 @@ void WaitFreeSnapshot::update(int tid, int value)
 {
     std::shared_ptr<int> snap = scan();
     SnapValue *old_value = _register[tid]->read();
-    old_value->_snap = snap;
     old_value->_label++;
+    old_value->_snap = snap;
     old_value->_value = value;
     // SnapValue *new_value = new SnapValue(old_value->_label + 1, value, snap);
     // _register[tid]->write(new_value);
