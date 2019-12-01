@@ -1,0 +1,22 @@
+diff --git storage/innobase/buf/buf0buf.cc storage/innobase/buf/buf0buf.cc
+index 41d242a9360..1dfff37bd2a 100644
+--- storage/innobase/buf/buf0buf.cc
++++ storage/innobase/buf/buf0buf.cc
+@@ -2130,6 +2130,8 @@ buf_pool_init(
+ 
+ 	buf_chunk_map_reg = UT_NEW_NOKEY(buf_pool_chunk_map_t());
+ 
++	struct timeval stop, start;
++	gettimeofday(&start, NULL);
+ 	for (i = 0; i < n_instances; i++) {
+ 		buf_pool_t*	ptr	= &buf_pool_ptr[i];
+ 
+@@ -2141,6 +2143,8 @@ buf_pool_init(
+ 			return(DB_ERROR);
+ 		}
+ 	}
++	gettimeofday(&stop, NULL);
++	printf("buf pool init time : %lu us\n", (stop.tv_sec - start.tv_sec) * 1000000 + stop.tv_usec - start.tv_usec);
+ 
+ 	buf_chunk_map_ref = buf_chunk_map_reg;
+ 
